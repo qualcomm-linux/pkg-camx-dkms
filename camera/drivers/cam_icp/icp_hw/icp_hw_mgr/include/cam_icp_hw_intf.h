@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2024, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #ifndef CAM_ICP_HW_INTF_H
@@ -131,6 +131,15 @@ struct cam_icp_dev_clk_update_cmd {
 struct cam_icp_ubwc_cfg_cmd {
 	uint32_t ubwc_cfg_dev_mask;
 	bool disable_ubwc_comp;
+};
+
+struct camera_firmware {
+	struct device *dev;
+	struct iommu_domain *iommu_domain;
+	struct qcom_scm_pas_context *ctx;
+	phys_addr_t mem_phys;
+	size_t mem_size;
+	bool has_el2_iommu;
 };
 
 #endif

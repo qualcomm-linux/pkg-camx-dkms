@@ -14,6 +14,7 @@
 #include <linux/list_sort.h>
 #include <linux/spi/spi.h>
 #include <linux/firmware/qcom/qcom_scm.h>
+#include <linux/firmware.h>
 
 #include "cam_csiphy_dev.h"
 #include "cam_cpastop_hw.h"
@@ -57,6 +58,8 @@ MODULE_IMPORT_NS(DMA_BUF);
 #endif
 
 #define IS_CSF25(x, y) ((((x) == 2) && ((y) == 5)) ? 1 : 0)
+
+struct qcom_scm_pas_context;
 
 struct cam_fw_alloc_info {
 	struct device *fw_dev;
@@ -131,6 +134,38 @@ static inline int qcom_scm_camera_update_camnoc_qos(uint32_t use_case_id,
 
 int cam_update_camnoc_qos_settings(uint32_t use_case_id,
 	uint32_t num_arg, struct qcom_scm_camera_qos *scm_buf);
+
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(6, 18, 6)
+static inline struct qcom_scm_pas_context *devm_qcom_scm_pas_context_alloc(struct device *dev,
+							     u32 pas_id,
+							     phys_addr_t mem_phys,
+							     size_t mem_size)
+{
+	return ERR_PTR(-EINVAL);
+}
+
+static inline int qcom_scm_pas_prepare_and_auth_reset(struct qcom_scm_pas_context *ctx)
+{
+	return -EINVAL;
+}
+
+static inline void qcom_pas_ctx_set_use_tzmem(struct qcom_scm_pas_context *ctx, bool enable)
+{
+	/* no-op on kernels without PAS context */
+}
+
+static inline int qcom_mdt_pas_load(struct qcom_scm_pas_context *ctx,
+				    const struct firmware *fw, const char *firmware,
+				    void *mem_region, phys_addr_t *reloc_base)
+{
+	return -ENODEV;
+}
+#else
+static inline void qcom_pas_ctx_set_use_tzmem(struct qcom_scm_pas_context *ctx, bool enable)
+{
+	ctx->use_tzmem = enable;
+}
+#endif
 
 int camera_i2c_compare_dev(struct device *dev, const void *data);
 

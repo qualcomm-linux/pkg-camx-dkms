@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2024, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #ifndef _CAM_ICP_V2_CORE_H_
@@ -39,6 +39,7 @@ struct cam_icp_v2_core_info {
 		uintptr_t fw_kva_addr;
 		uint64_t fw_buf_len;
 	} fw_params;
+	struct camera_firmware *fw;
 	bool cpas_start;
 	bool use_sec_pil;
 	bool is_irq_test;

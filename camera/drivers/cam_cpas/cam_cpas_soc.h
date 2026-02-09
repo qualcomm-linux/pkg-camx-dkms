@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2024, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #ifndef _CAM_CPAS_SOC_H_
@@ -304,7 +304,7 @@ struct cam_cpas_private_soc {
 	uint32_t num_caches;
 	uint32_t part_info;
 	struct cam_sys_cache_info *llcc_info;
-	bool enable_secure_qos_update;
+	uint32_t enable_secure_qos_update;
 	bool enable_smart_qos;
 	bool enable_cam_ddr_drv;
 	bool enable_cam_clk_drv;
