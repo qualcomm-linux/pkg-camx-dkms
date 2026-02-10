@@ -1,4 +1,3 @@
-
 name: Package Build PR Check
 description: |
   This workflow will execute when a PR is open against the configured branch.
@@ -12,19 +11,27 @@ description: |
 
 on:
   pull_request_target:
-    branches: [ main ]
+    branches: [ main, development ]
+    types:
+      - ready_for_review
+      - synchronize
+    paths-ignore:
+      - '.github/**'
 
 permissions:
  contents: read
- security-events: write
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   package-build-pr-check:
     uses: qualcomm-linux/qcom-build-utils/.github/workflows/qcom-upstream-pr-pkg-build-reusable-workflow.yml@main
     with:
       qcom-build-utils-ref: main
-      upstream-repo: ${{github.repository}}
-      upstream-repo-ref: ${{github.head_ref}}
+      upstream-repo: ${{ github.event.pull_request.head.repo.full_name }}
+      upstream-repo-ref: ${{ github.event.pull_request.head.ref }}
       pkg-repo: ${{vars.PKG_REPO_GITHUB_NAME}}
       pr-number: ${{github.event.pull_request.number}}
     secrets:
