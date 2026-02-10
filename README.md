@@ -24,7 +24,15 @@ The `main` branch includes the following workflows in the `.github/workflows/` d
 - **qcom-preflight-checks.yml**: A sanity check workflow inherited from the base Qualcomm template.
 - **stale-issues.yml**: A workflow for managing stale issues, also inherited from the base template.
 - **build-debian-package.yml**: Builds the Debian package for this repository. This workflow serves as an entry point that invokes reusable workflows from the centralized qcom-build-utils repository.
+- **pr-pre-post-merge.yml**: This workflow executes during a PR, and once the PR is merged. 
 - **promote-upstream.yml**: Promotes the package's tracking version to a new upstream release. This workflow also triggers reusable workflows in qcom-build-utils.
+- **release**: Used to trigger a release of a package
+
+## IMPORTANT: Workflow to paste in the upstream source repo
+
+The .github/workflows/to_paste_in_upstream/pkg-build-pr-check.yml needs to be transfered over to the source repo.
+
+**This workflow needs to be put in the default branch of the source repo (likely branch main unless you modify it), otherwise it wont work** This is per new December Github update
 
 ## Repository Configuration
 
