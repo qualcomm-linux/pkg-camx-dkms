@@ -7,6 +7,7 @@
 #include <linux/of_address.h>
 #include <linux/firmware/qcom/qcom_scm.h>
 #include <linux/soc/qcom/mdt_loader.h>
+#include <linux/kallsyms.h>
 
 #include "cam_cpas_api.h"
 #include "cam_debug_util.h"
@@ -29,6 +30,19 @@
 #define ICP_FW_NAME_MAX_SIZE    32
 
 #define ICP_V2_IRQ_TEST_TIMEOUT 1000
+
+typedef void *(*devm_qcom_scm_pas_context_alloc_t)(
+		struct device *dev, u32 pas_id, u64 start, size_t size);
+
+typedef int (*qcom_mdt_pas_load_t)(
+		struct cam_qcom_scm_pas_context *ctx,
+		const struct firmware *fw,
+		const char *firmware,
+		void *mem_region,
+		phys_addr_t *reloc_base);
+
+typedef int (*qcom_scm_pas_prepare_and_auth_reset_t)(
+		struct cam_qcom_scm_pas_context *ctx);
 
 static const struct hfi_ops hfi_icp_v2_ops = {
 	.irq_raise = cam_icp_v2_irq_raise,
@@ -606,6 +620,8 @@ static int __load_firmware(struct platform_device *pdev,
 	phys_addr_t res_start;
 	size_t res_size;
 	ssize_t fw_size;
+	devm_qcom_scm_pas_context_alloc_t fn_devm_qcom_scm_pas_context_alloc = NULL;
+	qcom_mdt_pas_load_t fn_qcom_mdt_pas_load = NULL;
 	int rc;
 
 	if (!pdev) {
@@ -670,16 +686,38 @@ static int __load_firmware(struct platform_device *pdev,
 		goto out;
 	}
 
-	fw->ctx = devm_qcom_scm_pas_context_alloc(&pdev->dev, fw_pas_id, res_start,
-			res_size);
+
+	fn_devm_qcom_scm_pas_context_alloc = (devm_qcom_scm_pas_context_alloc_t)
+		__symbol_get("devm_qcom_scm_pas_context_alloc");
+
+	if (!fn_devm_qcom_scm_pas_context_alloc) {
+		CAM_ERR(CAM_ICP,
+				"SCM PAS context alloc symbol not available");
+		return -EOPNOTSUPP;
+	}
+
+	fw->ctx = fn_devm_qcom_scm_pas_context_alloc
+		(&pdev->dev, fw_pas_id, res_start, res_size);
 	if (IS_ERR_OR_NULL(fw->ctx)) {
 		rc = fw->ctx ? PTR_ERR(fw->ctx) : -ENOMEM;
+		CAM_ERR(CAM_ICP, "PAS context alloc failed rc=%d", rc);
 		fw->ctx = NULL;
 		goto out;
 	}
 
-	qcom_pas_ctx_set_use_tzmem(fw->ctx, fw->has_el2_iommu);
-	rc = qcom_mdt_pas_load(fw->ctx, firmware, firmware_name, vaddr, NULL);
+	cam_qcom_pas_ctx_set_use_tzmem(fw->ctx, fw->has_el2_iommu);
+
+
+	fn_qcom_mdt_pas_load = (qcom_mdt_pas_load_t)__symbol_get("qcom_mdt_pas_load");
+	if (!fn_qcom_mdt_pas_load) {
+		CAM_ERR(CAM_ICP,
+				"qcom_mdt_pas_load symbol not available");
+		if (fn_devm_qcom_scm_pas_context_alloc)
+			symbol_put_addr(fn_devm_qcom_scm_pas_context_alloc);
+		return -EOPNOTSUPP;
+	}
+
+	rc = fn_qcom_mdt_pas_load(fw->ctx, firmware, firmware_name, vaddr, NULL);
 	if (rc) {
 		CAM_ERR(CAM_ICP, "failed to load firmware rc=%d", rc);
 		fw->ctx = NULL;
@@ -694,6 +732,10 @@ out:
 	if (vaddr)
 		iounmap(vaddr);
 
+	if (fn_devm_qcom_scm_pas_context_alloc)
+		symbol_put_addr(fn_devm_qcom_scm_pas_context_alloc);
+	if (fn_qcom_mdt_pas_load)
+		symbol_put_addr(fn_qcom_mdt_pas_load);
 	release_firmware(firmware);
 	return rc;
 }
@@ -705,6 +747,7 @@ static int cam_icp_v2_boot(struct cam_hw_info *icp_v2_info,
 	int rc;
 	struct cam_icp_v2_core_info *core_info = NULL;
 	struct cam_icp_soc_info     *soc_priv;
+	qcom_scm_pas_prepare_and_auth_reset_t fn_prepare_and_auth = NULL;
 
 	if (!IS_REACHABLE(CONFIG_QCOM_MDT_LOADER))
 		return -EOPNOTSUPP;
@@ -748,16 +791,28 @@ static int cam_icp_v2_boot(struct cam_hw_info *icp_v2_info,
 		core_info->fw->mem_size = 0;
 	}
 
-	rc = qcom_scm_pas_prepare_and_auth_reset(core_info->fw->ctx);
+	fn_prepare_and_auth = (qcom_scm_pas_prepare_and_auth_reset_t)
+		__symbol_get("qcom_scm_pas_prepare_and_auth_reset");
+
+	if (!fn_prepare_and_auth) {
+		CAM_ERR(CAM_ICP, "PAS prepare_and_auth_reset symbol not available");
+		return -EOPNOTSUPP;
+	}
+
+	rc = fn_prepare_and_auth(core_info->fw->ctx);
 	if (rc) {
 		CAM_ERR(CAM_ICP, "auth and reset failed rc=%d", rc);
 		goto err;
 	}
 
 	core_info->use_sec_pil = true;
+	if (fn_prepare_and_auth)
+		symbol_put_addr(fn_prepare_and_auth);
 	return 0;
 err:
 	prepare_shutdown(icp_v2_info);
+	if (fn_prepare_and_auth)
+		symbol_put_addr(fn_prepare_and_auth);
 	return rc;
 }
 
