@@ -19242,7 +19242,7 @@ int cam_ife_hw_mgr_init(struct cam_hw_mgr_intf *hw_mgr_intf, int *iommu_hdl,
 		}
 	}
 	if (!j)
-		CAM_ERR(CAM_ISP, "no valid SFE HW devices");
+		CAM_INFO(CAM_ISP, "no valid SFE HW devices");
 
 	cam_ife_hw_mgr_sort_dev_with_caps(&g_ife_hw_mgr);
 

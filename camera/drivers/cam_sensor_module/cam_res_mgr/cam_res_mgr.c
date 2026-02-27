@@ -815,7 +815,7 @@ static int cam_res_mgr_parse_dt_shared_pinctrl_gpio(
 		return -EINVAL;
 	}
 
-	CAM_INFO(CAM_RES,
+	CAM_DBG(CAM_RES,
 		"number of pctrl_gpio: %d", dt->num_shared_pctrl_gpio);
 
 	rc = of_property_read_u32_array(of_node, "gpios-shared-pinctrl",
@@ -829,7 +829,7 @@ static int cam_res_mgr_parse_dt_shared_pinctrl_gpio(
 		rc = of_property_read_string_index(of_node,
 			"shared-pctrl-gpio-names",
 			i, &(dt->pctrl_name[i]));
-		CAM_INFO(CAM_RES, "shared-pctrl-gpio-names[%d] = %s",
+		CAM_DBG(CAM_RES, "shared-pctrl-gpio-names[%d] = %s",
 			i, dt->pctrl_name[i]);
 		if (rc) {
 			CAM_ERR(CAM_RES,

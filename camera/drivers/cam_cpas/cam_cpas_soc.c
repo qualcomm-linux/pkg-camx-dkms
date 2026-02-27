@@ -825,7 +825,7 @@ static int cam_cpas_get_hw_features(struct platform_device *pdev,
 		} else {
 			fuse_shift = val - 1;
 		}
-		CAM_INFO(CAM_CPAS,
+		CAM_DBG(CAM_CPAS,
 			"feature 0x%x addr 0x%x, mask 0x%x, shift 0x%x type 0x%x hw_map 0x%x",
 			feature, fuse_addr, fuse_mask, fuse_shift, enable_type,
 			hw_map);
@@ -849,7 +849,7 @@ static int cam_cpas_get_hw_features(struct platform_device *pdev,
 					fuse_addr;
 				soc_private->fuse_info.fuse_val[j].fuse_val =
 					fuse_val;
-				CAM_INFO(CAM_CPAS,
+				CAM_DBG(CAM_CPAS,
 					"fuse_addr 0x%x, fuse_val %x",
 					fuse_addr, fuse_val);
 				num_fuse++;
@@ -908,14 +908,14 @@ static int cam_cpas_get_hw_features(struct platform_device *pdev,
 					enable_type);
 				goto end;
 			}
-			CAM_INFO(CAM_CPAS,
+			CAM_DBG(CAM_CPAS,
 				"feature 0x%x enable=%d hw_map=0x%x",
 				feature_info->feature, feature_info->enable,
 				feature_info->hw_map);
 		} else {
 			feature_info->value =
 				(fuse_val & fuse_mask) >> fuse_shift;
-			CAM_INFO(CAM_CPAS,
+			CAM_DBG(CAM_CPAS,
 				"feature 0x%x value=0x%x hw_map=0x%x",
 				feature_info->feature, feature_info->value,
 				feature_info->hw_map);

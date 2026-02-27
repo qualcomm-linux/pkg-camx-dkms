@@ -1859,7 +1859,7 @@ static int cam_cpas_hw_get_hw_info(void *hw_priv,
 		cpas_hw->soc_info.soc_private;
 
 	hw_caps->fuse_info = soc_private->fuse_info;
-	CAM_INFO(CAM_CPAS, "fuse info->num_fuses %d",
+	CAM_DBG(CAM_CPAS, "fuse info->num_fuses %d",
 		hw_caps->fuse_info.num_fuses);
 
 	return 0;

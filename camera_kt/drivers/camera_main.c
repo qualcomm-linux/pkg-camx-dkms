@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2019-2020, The Linux Foundation. All rights reserved.
- * Copyright (c) 2023-2025, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 #include <linux/module.h>
 #include <linux/build_bug.h>
@@ -317,8 +317,7 @@ static int cam_main_probe(struct platform_device *pdev)
 		CAM_ERR(CAM_UTIL,"Camera main populate failed %d", rc);
 		return rc;
 	}
-	CAM_INFO(CAM_UTIL, "camera_kt probe success %d", rc);
-	CAM_INFO(CAM_UTIL, "Spectra camera driver initialized");
+	CAM_INFO(CAM_UTIL, "Spectra camera_kt driver initialized rc : %d", rc);
 
 end_init:
 	return rc;
@@ -365,7 +364,7 @@ static int camera_init(void)
 	}
 
 	if (rc == -ENODEV) {
-		CAM_ERR(CAM_UTIL, "No matching device found for camera_kt driver = %d", rc);
+		CAM_INFO(CAM_UTIL, "No matching device found for camera_kt driver = %d", rc);
 	}
 	return rc;
 }

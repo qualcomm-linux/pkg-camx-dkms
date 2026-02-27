@@ -3425,7 +3425,7 @@ int cam_soc_util_configure_pd(struct cam_hw_soc_info *soc_info)
 							"power-domains",
 							"#power-domain-cells");
 	if (soc_info->num_genpd < 1) {
-		CAM_WARN(CAM_UTIL,
+		CAM_DBG(CAM_UTIL,
 			"DBG: power-domains not defined for %s",
 			soc_info->dev_name);
 		soc_info->num_genpd = 0;
