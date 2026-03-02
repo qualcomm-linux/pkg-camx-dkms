@@ -19,6 +19,32 @@
 #include "cam_eeprom_dev.h"
 #include "cam_eeprom_core.h"
 
+/**
+ * cam_dma_fence_signal_locked() - signal fence with stable int return semantics
+ * @fence: fence to signal
+ *
+ * Return:
+ *   0  : fence was not previously signaled (we signaled it now)
+ *   <0 : fence was already signaled (or legacy dma_fence_signal_locked error)
+ *
+ * Notes:
+ * - Must be called with fence->lock held (same requirement as the underlying
+ *   *_locked() APIs).
+ * - On >= 7.0.0 kernels, dma_fence_check_and_signal_locked() returns a bool:
+ *     true  => fence had already been signaled
+ *     false => fence was not signaled before this call
+ */
+int cam_dma_fence_signal_locked(struct dma_fence *fence)
+{
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 0, 0)
+#define CAM_DMA_FENCE_ALREADY_SIGNALED_ERR (-EINVAL)
+    bool already_signaled = dma_fence_check_and_signal_locked(fence);
+    return already_signaled ? CAM_DMA_FENCE_ALREADY_SIGNALED_ERR : 0;
+#else
+    return dma_fence_signal_locked(fence);
+#endif
+}
+
 #if IS_ENABLED(CONFIG_SPECTRA_USE_RPMH_DRV_API)
 #define CAM_RSC_DRV_IDENTIFIER "cam_rsc"
 
