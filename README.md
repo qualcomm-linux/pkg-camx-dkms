@@ -2,15 +2,14 @@
 
 This repository serves as a template for creating Debian package repositories within the Qualcomm Linux ecosystem. It provides the essential structure, GitHub workflows, and configuration necessary to integrate with the [qcom-build-utils](https://github.com/qualcomm-linux/qcom-build-utils) repository, enabling standardized Debian package building processes.
 
-For a comprehensive tutorial on utilizing this template with an example project, refer to the [pkg-example README](https://github.com/qualcomm-linux/pkg-example/blob/main/README.md).
-
 ## Quick Start
 
 To create a new Debian package repository using this template:
 
 1. Navigate to this repository's GitHub page and click the **"Use this template"** button located in the top right corner.
-2. Name the new repository with the prefix `pkg-` to adhere to the naming convention for package repositories.
-3. Ensure the **"Include all branches"** option is enabled. Otherwise by default, only the default branch "main" is cloned.
+2. Select **qualcomm-linux** as the organization in the drop-down menu. This is necessary.
+3. Name the new repository with the prefix `pkg-` to adhere to the naming convention for package repositories. This is necessary.
+4. Ensure the **"Include all branches"** option is enabled. Otherwise by default, only the default branch "main" is cloned.
 
 ## Branches
 
@@ -30,17 +29,16 @@ The `main` branch includes the following workflows in the `.github/workflows/` d
 
 ## IMPORTANT: Workflow to paste in the upstream source repo
 
-The .github/workflows/to_paste_in_upstream/pkg-build-pr-check.yml needs to be transfered over to the source repo.
+The .github/TO_PASTE_IN_UPSTREAM_REPO/pkg-build-pr-check.yml needs to be transfered over to the source repo.
+Once this is done, delete the TO_PASTE_IN_UPSTREAM_REPO as it is not necessary to keep in this repository once the workflow has been transfered.
 
 **This workflow needs to be put in the default branch of the source repo (likely branch main unless you modify it), otherwise it wont work** This is per new December Github update
 
 ## Repository Configuration
 
-### AWS arm64 runners
+### Runners
 
-The workflows support running and compiling on both AMD64 and ARM64 architectures. When selecting 'debian-latest' as runnner, you are selecting 
-AMD64 runners from gihub itself. Otherwise, if you select "lecore-prd-u2404-arm64-xlrg-od-ephem" as the runner, you are selecting one of the AWS ARM64 ephemeral runners which are not part of github, they are administered by Qualcomm and need to be enabled on a per-repo basis.
-On teams, join the group called "AWS Runners" and ask about having the AWS runners enabled for your repo
+All the workflows are running on the github arm64 runners. Some sections need to run on the AWS runners where access to S3 buckets and artifactory. You will need to ask **Steve Manley** to enable the repo for the AWS runners. 
 
 ### Repository Variables
 
@@ -60,10 +58,6 @@ Configure branch protection for `debian/qcom-next`:
 
 ### Additional Settings
 
-- Ask [Mark Matyas](mmatyas@qti.qualcomm.com) to share the following org secret/variables with the repo :
-  - secrets.DEB_PKG_BOT_CI_TOKEN
-  - vars.DEB_PKG_BOT_CI_USERNAME
-  - vars.DEB_PKG_BOT_CI_EMAIL
 - Enable **"Automatically delete head branches"** for pull requests.
 - Allow only merge commits for pull request merges.
 - Enable **release immutability** in the upstream repository.
@@ -77,7 +71,6 @@ Configure branch protection for `debian/qcom-next`:
     named pkg-foo, then the Maintainer list will be named Maintainers.pkg-foo, and one need to request
     access via https://lists.qualcomm.com, find the list and ask access. For the bot, you must add it via
     its qualcomm username **githubservice**@qti.qualcomm.com, as opposed to its Github handle above.
-
 
 ## Making your pkg-repo to public
 
@@ -134,10 +127,6 @@ If the repo is named "pkg-example", then the list(s) to search for are :
 - maintainers.pkg-example
 
 It takes about an hour between the list acceptance and the new role to reflect in Github
-
-
-
-
 
 ## Getting in Contact
 
