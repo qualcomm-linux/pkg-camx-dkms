@@ -76,7 +76,7 @@ int cam_fd_dev_close_internal(struct v4l2_subdev *sd,
 
 	mutex_lock(&fd_dev->lock);
 	if (fd_dev->open_cnt == 0) {
-		CAM_WARN(CAM_FD, "device already closed");
+		CAM_DBG(CAM_FD, "device already closed");
 		mutex_unlock(&fd_dev->lock);
 		return 0;
 	}

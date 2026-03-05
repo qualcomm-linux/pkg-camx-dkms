@@ -80,7 +80,7 @@ static int cam_icp_subdev_open(struct v4l2_subdev *sd,
 
 	mutex_lock(&g_icp_dev.icp_lock);
 	if (g_icp_dev.open_cnt >= 1) {
-		CAM_ERR(CAM_ICP, "ICP subdev is already opened");
+		CAM_INFO(CAM_ICP, "ICP subdev is already opened");
 		rc = -EALREADY;
 		goto end;
 	}

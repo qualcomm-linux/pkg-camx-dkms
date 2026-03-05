@@ -74,7 +74,7 @@ static int cam_ope_subdev_open(struct v4l2_subdev *sd,
 
 	mutex_lock(&g_ope_dev.ope_lock);
 	if (g_ope_dev.open_cnt >= 1) {
-		CAM_ERR(CAM_OPE, "OPE subdev is already opened");
+		CAM_INFO(CAM_OPE, "OPE subdev is already opened");
 		rc = -EALREADY;
 		goto end;
 	}
