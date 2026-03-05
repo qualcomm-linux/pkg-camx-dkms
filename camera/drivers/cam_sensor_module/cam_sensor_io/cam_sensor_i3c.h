@@ -12,6 +12,11 @@
 #include <linux/i3c/device.h>
 #include "cam_sensor_io.h"
 
+/* keep back compatible */
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(7, 0, 0))
+#define i3c_priv_xfer i3c_xfer
+#endif
+
 /**
  * cam_qup_i3c_read : This API handles QUP I3C read operations
  * @client    : QUP IeC client structure

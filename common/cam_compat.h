@@ -90,6 +90,7 @@ static inline void cam_timer_delete_sync_compat(struct timer_list *timer)
 #endif
 }
 
+int cam_dma_fence_signal_locked(struct dma_fence *fence);
 int cam_reserve_icp_fw(struct cam_fw_alloc_info *icp_fw, size_t fw_length);
 void cam_unreserve_icp_fw(struct cam_fw_alloc_info *icp_fw, size_t fw_length);
 int camera_component_match_add_drivers(struct device *master_dev,

@@ -5,6 +5,7 @@
 
 #include "cam_sync_dma_fence.h"
 #include "cam_sync_util.h"
+#include "cam_compat.h"
 
 extern unsigned long cam_sync_monitor_mask;
 
@@ -470,7 +471,7 @@ static int __cam_dma_fence_signal_fence(
 	if (status)
 		dma_fence_set_error(dma_fence, status);
 
-	rc = dma_fence_signal_locked(dma_fence);
+	rc = cam_dma_fence_signal_locked(dma_fence);
 
 end:
 	spin_unlock_bh(dma_fence->lock);
