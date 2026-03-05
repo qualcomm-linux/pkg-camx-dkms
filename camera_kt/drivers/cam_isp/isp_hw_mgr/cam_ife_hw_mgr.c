@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #include <linux/slab.h>
@@ -8529,7 +8529,7 @@ int cam_ife_hw_mgr_init(struct cam_hw_mgr_intf *hw_mgr_intf, int *iommu_hdl)
 			j++;
 	}
 	if (!j)
-		CAM_ERR(CAM_ISP, "no valid IFE TPG HW");
+		CAM_INFO(CAM_ISP, "no valid IFE TPG HW");
 
 
 	cam_ife_hw_mgr_sort_dev_with_caps(&g_ife_hw_mgr);

@@ -493,7 +493,7 @@ int cam_smmu_need_force_alloc_cached(bool *force_alloc_cached)
 		return -EINVAL;
 	}
 
-	CAM_INFO(CAM_SMMU, "force_cache_allocs=%d",
+	CAM_DBG(CAM_SMMU, "force_cache_allocs=%d",
 		iommu_cb_set.force_cache_allocs);
 
 	/*
