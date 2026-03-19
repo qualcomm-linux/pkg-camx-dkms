@@ -49,13 +49,14 @@ Set the following repository variables to establish links between upstream and p
 
 ### Branch Protection Rules
 
-Configure branch protection for `debian/qcom-next`:
+Configure branch protection for `debian/**` and `qcom/**`:
 
 - Restrict deletions.
 - Require pull requests before merging.
 - Block force pushes.
 - Add `build / build-debian-package` as a required status check.
-
+- Add the `qcom-service-bot` account with admin rights
+- Add the Admin role to the branche protection ruleset so that the qcom-service-bot can push directly to those branches
 ### Additional Settings
 
 - Enable **"Automatically delete head branches"** for pull requests.
