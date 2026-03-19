@@ -89,6 +89,10 @@ jobs:
             gh repo clone "$ORG/$repo" "$repo" 2>&1 | sed 's/^/  /'
             cd "$repo"
 
+            # Detect the default branch (usually 'main' but some repos use 'master')
+            default_branch=$(gh api repos/$ORG/$repo --jq '.default_branch')
+            echo "  🌿 Default branch for $repo: $default_branch"
+
             # Configure git to use gh CLI for authentication
             gh auth setup-git
 
@@ -160,7 +164,7 @@ jobs:
                 --title "chore: sync workflows from pkg-template" \
                 --body "This PR syncs the latest workflows from pkg-template." \
                 --head sync/pkg-template-workflows \
-                --base main)
+                --base "$default_branch")
               
               PR_URLS+=("$pr_url")
               echo "    ✅ PR created: $pr_url"
