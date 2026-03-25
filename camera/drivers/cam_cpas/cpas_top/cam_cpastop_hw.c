@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2024, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #include <linux/delay.h>
@@ -44,6 +44,7 @@
 #include "cpastop_v665_100.h"
 #include "cpastop_v690_100.h"
 #include "cpastop_v692_100.h"
+#include "cpastop_v695_100.h"
 #include "cam_req_mgr_workq.h"
 #include "cam_common_util.h"
 
@@ -271,7 +272,17 @@ static const uint32_t cam_cpas_hw_version_map
 		0,
 		0,
 	},
-};
+	/* for camera_695 */
+	{
+		CAM_CPAS_TITAN_695_V100,
+		0,
+		0,
+		0,
+		0,
+		0,
+		0,
+	},
+	};
 
 static char *cam_cpastop_get_camnoc_name(enum cam_camnoc_hw_type type)
 {
@@ -366,6 +377,9 @@ static int cam_cpas_translate_camera_cpas_version_id(
 		break;
 	case CAM_CPAS_CAMERA_VERSION_692:
 		*cam_version_id = CAM_CPAS_CAMERA_VERSION_ID_692;
+		break;
+	case CAM_CPAS_CAMERA_VERSION_695:
+		*cam_version_id = CAM_CPAS_CAMERA_VERSION_ID_695;
 		break;
 	default:
 		CAM_ERR(CAM_CPAS, "Invalid cam version %u",
@@ -1535,6 +1549,10 @@ static int cam_cpastop_init_hw_version(struct cam_hw_info *cpas_hw,
 	case CAM_CPAS_TITAN_692_V100:
 		alloc_camnoc_info[CAM_CAMNOC_HW_COMBINED] = &cam692_cpas100_camnoc_info;
 		cpas_info = &cam692_cpas100_cpas_info;
+		break;
+	case CAM_CPAS_TITAN_695_V100:
+		alloc_camnoc_info[CAM_CAMNOC_HW_COMBINED] = &cam695_cpas100_camnoc_info;
+		cpas_info = &cam695_cpas100_cpas_info;
 		break;
 	default:
 		CAM_ERR(CAM_CPAS, "Camera Version not supported %d.%d.%d",

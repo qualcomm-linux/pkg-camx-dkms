@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2024, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #ifndef _CAM_CPAS_API_H_
@@ -106,6 +106,7 @@ enum cam_cpas_camera_version {
 	CAM_CPAS_CAMERA_VERSION_665  = 0x00060605,
 	CAM_CPAS_CAMERA_VERSION_690  = 0x00060900,
 	CAM_CPAS_CAMERA_VERSION_692  = 0x00060902,
+	CAM_CPAS_CAMERA_VERSION_695  = 0x00060905,
 	CAM_CPAS_CAMERA_VERSION_MAX
 };
 
@@ -149,6 +150,7 @@ enum cam_cpas_camera_version_map_id {
 	CAM_CPAS_CAMERA_VERSION_ID_665  = 0x11,
 	CAM_CPAS_CAMERA_VERSION_ID_690  = 0x12,
 	CAM_CPAS_CAMERA_VERSION_ID_692  = 0x13,
+	CAM_CPAS_CAMERA_VERSION_ID_695  = 0x14,
 	CAM_CPAS_CAMERA_VERSION_ID_MAX
 };
 
@@ -201,6 +203,7 @@ enum cam_cpas_hw_version {
 	CAM_CPAS_TITAN_665_V100 = 0x665100,
 	CAM_CPAS_TITAN_690_V100 = 0x690100,
 	CAM_CPAS_TITAN_692_V100 = 0x692100,
+	CAM_CPAS_TITAN_695_V100 = 0x695100,
 	CAM_CPAS_TITAN_MAX
 };
 
