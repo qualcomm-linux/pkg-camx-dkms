@@ -38,7 +38,6 @@ typedef int (*qcom_mdt_pas_load_t)(
 		struct cam_qcom_scm_pas_context *ctx,
 		const struct firmware *fw,
 		const char *firmware,
-		void *mem_region,
 		phys_addr_t *reloc_base);
 
 typedef int (*qcom_scm_pas_prepare_and_auth_reset_t)(
@@ -614,7 +613,6 @@ static int __load_firmware(struct platform_device *pdev,
 	const char *fw_name;
 	const struct firmware *firmware = NULL;
 	char firmware_name[ICP_FW_NAME_MAX_SIZE] = {0};
-	void *vaddr = NULL;
 	struct device_node *node;
 	struct resource res;
 	phys_addr_t res_start;
@@ -679,14 +677,6 @@ static int __load_firmware(struct platform_device *pdev,
 		goto out;
 	}
 
-	vaddr = ioremap_wc(res_start, res_size);
-	if (!vaddr) {
-		CAM_ERR(CAM_ICP, "unable to map firmware carveout");
-		rc = -ENOMEM;
-		goto out;
-	}
-
-
 	fn_devm_qcom_scm_pas_context_alloc = (devm_qcom_scm_pas_context_alloc_t)
 		__symbol_get("devm_qcom_scm_pas_context_alloc");
 
@@ -707,7 +697,6 @@ static int __load_firmware(struct platform_device *pdev,
 
 	cam_qcom_pas_ctx_set_use_tzmem(fw->ctx, fw->has_el2_iommu);
 
-
 	fn_qcom_mdt_pas_load = (qcom_mdt_pas_load_t)__symbol_get("qcom_mdt_pas_load");
 	if (!fn_qcom_mdt_pas_load) {
 		CAM_ERR(CAM_ICP,
@@ -717,7 +706,7 @@ static int __load_firmware(struct platform_device *pdev,
 		return -EOPNOTSUPP;
 	}
 
-	rc = fn_qcom_mdt_pas_load(fw->ctx, firmware, firmware_name, vaddr, NULL);
+	rc = fn_qcom_mdt_pas_load(fw->ctx, firmware, firmware_name, NULL);
 	if (rc) {
 		CAM_ERR(CAM_ICP, "failed to load firmware rc=%d", rc);
 		fw->ctx = NULL;
@@ -729,9 +718,6 @@ static int __load_firmware(struct platform_device *pdev,
 
 	CAM_DBG(CAM_ICP, "res_start=0x%x, res_size=%zu", res_start, res_size);
 out:
-	if (vaddr)
-		iounmap(vaddr);
-
 	if (fn_devm_qcom_scm_pas_context_alloc)
 		symbol_put_addr(fn_devm_qcom_scm_pas_context_alloc);
 	if (fn_qcom_mdt_pas_load)
