@@ -58,6 +58,12 @@ jobs:
 
           echo "List of repositories starting with 'pkg-': $repos"
 
+          # Fetch pr-pre-post-merge.yml from pkg-template's debian/latest branch
+          DEBIAN_LATEST_WORKFLOW_FILE="$(pwd)/debian-latest-pr-pre-post-merge.yml"
+          echo "📥 Fetching pr-pre-post-merge.yml from pkg-template debian/latest branch"
+          gh api "repos/$ORG/pkg-template/contents/.github/workflows/pr-pre-post-merge.yml?ref=debian/latest" \
+            --jq '.content' | base64 -d > "$DEBIAN_LATEST_WORKFLOW_FILE"
+
           for repo in $repos; do
             # Skip excluded repositories
             if [[ " ${EXCLUDE_REPOS[@]} " =~ " ${repo} " ]]; then
@@ -95,6 +101,8 @@ jobs:
 
             # Configure git to use gh CLI for authentication
             gh auth setup-git
+            git config user.name "$BOT_NAME"
+            git config user.email "$BOT_EMAIL"
 
             # Delete the sync branch if it exists from a previous run
             if git ls-remote --exit-code --heads origin sync/pkg-template-workflows > /dev/null 2>&1; then
@@ -116,8 +124,8 @@ jobs:
             for workflow in ../pkg-template/.github/workflows/*.yml; do
               workflow_name=$(basename "$workflow")
 
-              # Skip workflows_sync.yml as it's already handled
-              if [[ "$workflow_name" == "workflows_sync.yml" ]]; then
+              # Skip workflows_sync.yml and pr-pre-post-merge.yml (handled separately per debian/* branch)
+              if [[ "$workflow_name" == "workflows_sync.yml" || "$workflow_name" == "pr-pre-post-merge.yml" ]]; then
                 continue
               fi
 
@@ -139,38 +147,94 @@ jobs:
               fi
             done
 
-            # If no changes needed, skip to next repo
-            if [[ "$isDirty" == "false" ]]; then
-              echo "    ✨ No changes needed for $repo"
-              cd ..
-              continue
-            fi
+              # Create branch, commit, and push main branch changes if needed
+              if [[ "$isDirty" == "true" ]]; then
+                echo "    📝 Creating branch and committing main branch changes"
+                git checkout -b sync/pkg-template-workflows 2>&1 | sed 's/^/    /'
+                git add .github/workflows/
+                git commit -s -m "chore: sync workflows from pkg-template" 2>&1 | sed 's/^/    /'
 
-            # Create branch, commit, and push changes
-            echo "    📝 Creating branch and committing changes"
-            git config user.name "$BOT_NAME"
-            git config user.email "$BOT_EMAIL"
-            git checkout -b sync/pkg-template-workflows 2>&1 | sed 's/^/    /'
-            git add .github/workflows/
-            git commit -s -m "chore: sync workflows from pkg-template" 2>&1 | sed 's/^/    /'
+                if [[ "${{ inputs.confirmation }}" == "true" ]]; then
+                  echo "    🚀 Pushing changes and creating PR for $default_branch"
+                  git push origin sync/pkg-template-workflows 2>&1 | sed 's/^/    /'
 
-            # Check if confirmation is enabled
-            if [[ "${{ inputs.confirmation }}" == "true" ]]; then
-              echo "    🚀 Pushing changes and creating PR"
-              git push origin sync/pkg-template-workflows 2>&1 | sed 's/^/    /'
+                  pr_url=$(gh pr create --repo "$ORG/$repo" \
+                    --title "chore: sync workflows from pkg-template" \
+                    --body "This PR syncs the latest workflows from pkg-template." \
+                    --head sync/pkg-template-workflows \
+                    --base "$default_branch")
 
-              # Create a pull request to sync workflows from pkg-template to the target repository
-              pr_url=$(gh pr create --repo "$ORG/$repo" \
-                --title "chore: sync workflows from pkg-template" \
-                --body "This PR syncs the latest workflows from pkg-template." \
-                --head sync/pkg-template-workflows \
-                --base "$default_branch")
-              
-              PR_URLS+=("$pr_url")
-              echo "    ✅ PR created: $pr_url"
-            else
-              echo "    👀 Dry-run mode - No PR will be created"
-            fi
+                  PR_URLS+=("$pr_url")
+                  echo "    ✅ PR created: $pr_url"
+                else
+                  echo "    👀 Dry-run mode - No PR will be created for $default_branch"
+                fi
+
+                # Return to default branch before debian/* sync
+                git checkout "$default_branch" 2>&1 | sed 's/^/    /'
+              else
+                echo "    ✨ No main branch changes needed for $repo"
+              fi
+
+              # Sync pr-pre-post-merge.yml from pkg-template's debian/latest to every debian/* branch
+              debian_branches=$(git branch -r | grep 'origin/debian/' | sed 's|.*origin/||' | tr -d ' ')
+
+              for debian_branch in $debian_branches; do
+                # Skip debian/latest itself (it's the source)
+                if [[ "$debian_branch" == "debian/latest" ]]; then
+                  continue
+                fi
+
+                echo "  🌿 Checking pr-pre-post-merge.yml on branch: $debian_branch"
+                safe_branch_name="${debian_branch//\//-}"
+                debian_sync_branch="sync/pkg-template-pr-merge-${safe_branch_name}"
+
+                # Delete existing sync branch if from a previous run
+                if git ls-remote --exit-code --heads origin "$debian_sync_branch" > /dev/null 2>&1; then
+                  echo "    🧹 Deleting existing $debian_sync_branch"
+                  git push origin --delete "$debian_sync_branch" 2>&1 | sed 's/^/    /'
+                fi
+
+                git checkout "$debian_branch" 2>&1 | sed 's/^/    /'
+
+                isDebianDirty=false
+                if [[ -f ".github/workflows/pr-pre-post-merge.yml" ]]; then
+                  if diff -q "$DEBIAN_LATEST_WORKFLOW_FILE" ".github/workflows/pr-pre-post-merge.yml" > /dev/null; then
+                    echo "    ✅ pr-pre-post-merge.yml is up to date on $debian_branch"
+                  else
+                    echo "    ❌ pr-pre-post-merge.yml differs on $debian_branch"
+                    cp "$DEBIAN_LATEST_WORKFLOW_FILE" ".github/workflows/pr-pre-post-merge.yml"
+                    isDebianDirty=true
+                  fi
+                else
+                  echo "    + Creating pr-pre-post-merge.yml on $debian_branch (missing)"
+                  mkdir -p ".github/workflows"
+                  cp "$DEBIAN_LATEST_WORKFLOW_FILE" ".github/workflows/pr-pre-post-merge.yml"
+                  isDebianDirty=true
+                fi
+
+                if [[ "$isDebianDirty" == "true" ]]; then
+                  git checkout -b "$debian_sync_branch" 2>&1 | sed 's/^/    /'
+                  git add .github/workflows/pr-pre-post-merge.yml
+                  git commit -s -m "chore: sync pr-pre-post-merge.yml from pkg-template debian/latest" 2>&1 | sed 's/^/    /'
+
+                  if [[ "${{ inputs.confirmation }}" == "true" ]]; then
+                    echo "    🚀 Pushing changes and creating PR for $debian_branch"
+                    git push origin "$debian_sync_branch" 2>&1 | sed 's/^/    /'
+
+                    pr_url=$(gh pr create --repo "$ORG/$repo" \
+                      --title "chore: sync pr-pre-post-merge.yml from pkg-template debian/latest" \
+                      --body "This PR syncs \`pr-pre-post-merge.yml\` from the \`debian/latest\` branch of pkg-template." \
+                      --head "$debian_sync_branch" \
+                      --base "$debian_branch")
+
+                    PR_URLS+=("$pr_url")
+                    echo "    ✅ PR created: $pr_url"
+                  else
+                    echo "    👀 Dry-run mode - No PR will be created for $debian_branch"
+                  fi
+                fi
+              done
 
             cd ..
           done
