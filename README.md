@@ -38,7 +38,15 @@ Once this is done, delete the TO_PASTE_IN_UPSTREAM_REPO as it is not necessary t
 
 ### Runners
 
-All the workflows are running on the github arm64 runners. Some sections need to run on the AWS runners where access to S3 buckets and artifactory. You will need to ask **Steve Manley** to enable the repo for the AWS runners. 
+All the workflows are running on the github arm64 runners. Some sections need to run on the AWS runners where access to S3 buckets and artifactory. You will need to ask **Steve Manley** to enable the repo for the AWS runners.
+
+### GHCR Registry Access
+
+The build workflows rely on the `pkg-builder` container image hosted in the qualcomm-linux GitHub Container Registry (GHCR). For your newly created repository to be able to pull this image, it must be explicitly granted `packages:read` access.
+
+To request this, please contact **Mark Matyas** (mmatyas@qti.qualcomm.com) and ask him to add your repository to the list of repositories authorized to access the `pkg-builder` package. The relevant settings page is:
+
+https://github.com/orgs/qualcomm-linux/packages/container/pkg-builder/settings
 
 ### Repository Variables
 
