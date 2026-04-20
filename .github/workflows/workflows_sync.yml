@@ -176,8 +176,8 @@ jobs:
                 echo "    ✨ No main branch changes needed for $repo"
               fi
 
-              # Sync pr-pre-post-merge.yml from pkg-template's debian/latest to every debian/* branch
-              debian_branches=$(git branch -r | grep 'origin/debian/' | sed 's|.*origin/||' | tr -d ' ')
+              # Sync pr-pre-post-merge.yml from pkg-template's debian/latest to every debian/* and qcom/debian/* branch
+              debian_branches=$(git branch -r | grep -E 'origin/(qcom/)?debian/' | sed 's|.*origin/||' | tr -d ' ')
 
               for debian_branch in $debian_branches; do
                 # Skip debian/latest itself (it's the source)
