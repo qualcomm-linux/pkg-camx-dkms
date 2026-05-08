@@ -6,7 +6,6 @@
 #include <linux/of.h>
 #include <linux/slab.h>
 #include <linux/gpio.h>
-#include <linux/of_gpio.h>
 #include <soc/qcom/cx_ipeak.h>
 
 #include "cam_soc_util.h"

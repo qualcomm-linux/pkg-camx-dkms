@@ -10,11 +10,11 @@
 #include <linux/platform_device.h>
 #include <linux/of.h>
 #include <linux/workqueue.h>
-#include <linux/of_gpio.h>
 #include <linux/interrupt.h>
 #include <linux/delay.h>
 #include "cam_hdmi_bdg_core.h"
 #include "camera_main.h"
+#include "cam_compat.h"
 
 #define HDMI_BDG_IRQ_HANDLER_DEVNAME             "hdmi_bdg_irq_handler"
 #define HDMI_BDG_IRQ_HANDLER_MAGIC_NUM           0xee
@@ -178,7 +178,7 @@ static int hdmi_bdg_irq_handler_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 
-	hdmi_bdg_irq_gpio = of_get_named_gpio(pdev->dev.of_node,
+	hdmi_bdg_irq_gpio = cam_of_get_named_gpio(&pdev->dev, pdev->dev.of_node,
 		"hdmi_bdg_irq_pin", 0);
 	ret = gpio_request(hdmi_bdg_irq_gpio, "hdmi_bdg_irq_pin");
 	if (ret) {
