@@ -57,7 +57,7 @@ static void __cam_dma_fence_free(struct dma_fence *fence)
 	CAM_DBG(CAM_DMA_FENCE,
 		"Free memory for dma fence context: %llu seqno: %llu",
 		fence->context, fence->seqno);
-	kfree(fence->lock);
+	kfree(dma_fence_spinlock(fence));
 	kfree(fence);
 }
 
@@ -458,7 +458,7 @@ static int __cam_dma_fence_signal_fence(
 	int rc;
 	bool fence_signaled = false;
 
-	spin_lock_bh(dma_fence->lock);
+	spin_lock_bh(dma_fence_spinlock(dma_fence));
 	fence_signaled = dma_fence_is_signaled_locked(dma_fence);
 	if (fence_signaled) {
 		rc = -EPERM;
@@ -474,7 +474,7 @@ static int __cam_dma_fence_signal_fence(
 	rc = cam_dma_fence_signal_locked(dma_fence);
 
 end:
-	spin_unlock_bh(dma_fence->lock);
+	spin_unlock_bh(dma_fence_spinlock(dma_fence));
 	return rc;
 }
 
