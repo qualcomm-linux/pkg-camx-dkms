@@ -34,6 +34,62 @@ MODULE_IMPORT_NS("DMA_BUF");
 MODULE_IMPORT_NS(DMA_BUF);
 #endif
 
+/*
+ * <linux/of_gpio.h> and of_get_named_gpio() were removed in kernel 7.1-rc2.
+ *
+ * Provide cam_of_get_named_gpio(dev, np, propname, index) as a general
+ * drop-in replacement that works on both old and new kernels:
+ *
+ *   kernel < 7.1 : delegates directly to of_get_named_gpio(np, propname, index)
+ *
+ *   kernel >= 7.1: reconstructs the integer GPIO number using only public APIs:
+ *     1. of_parse_phandle_with_args(np, propname, "#gpio-cells", 0, index, &args)
+ *        resolves the exact DT property name (no "-gpios" suffix appended),
+ *        returning the gpio-chip device_node and the hardware pin number.
+ *     2. gpio_device_find_by_fwnode() locates the gpio_device for that node.
+ *     3. gpio_device_get_base() + args.args[0] gives the Linux GPIO number,
+ *        which is identical to what of_get_named_gpio() returned on old kernels.
+ *     4. gpio_device_put() releases the reference from step 2.
+ *
+ * All files that previously included <linux/of_gpio.h> only for the header
+ * (no API calls) simply drop that include; cam_compat.h guards it internally.
+ */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 1, 0)
+#include <linux/gpio/consumer.h>
+#include <linux/gpio/driver.h>
+static inline int cam_of_get_named_gpio(struct device *dev,
+					const struct device_node *np,
+					const char *propname, int index)
+{
+	struct of_phandle_args args;
+	struct gpio_device *gdev;
+	int base, ret;
+
+	ret = of_parse_phandle_with_args(np, propname, "#gpio-cells",
+					 index, &args);
+	if (ret)
+		return ret;
+
+	gdev = gpio_device_find_by_fwnode(of_fwnode_handle(args.np));
+	of_node_put(args.np);
+	if (!gdev)
+		return -EPROBE_DEFER;
+
+	base = gpio_device_get_base(gdev);
+	gpio_device_put(gdev);
+
+	return base + args.args[0];
+}
+#else
+#include <linux/of_gpio.h>
+static inline int cam_of_get_named_gpio(struct device *dev,
+					const struct device_node *np,
+					const char *propname, int index)
+{
+	return of_get_named_gpio(np, propname, index);
+}
+#endif
+
 #ifdef CONFIG_DOMAIN_ID_SECURE_CAMERA
 #include <linux/IClientEnv.h>
 #include <linux/ITrustedCameraDriver.h>

@@ -8,7 +8,6 @@
 #include <linux/clk.h>
 #include <linux/slab.h>
 #include <linux/gpio.h>
-#include <linux/of_gpio.h>
 #include <linux/pm_domain.h>
 #include <linux/pm_runtime.h>
 #include <linux/pm_opp.h>
@@ -1168,7 +1167,7 @@ static int cam_soc_util_get_gpio_info(struct cam_hw_soc_info *soc_info)
 		goto free_gpio_conf;
 
 	for (i = 0; i < gpio_array_size; i++) {
-		gpio_array[i] = of_get_named_gpio(of_node, "gpios", i);
+		gpio_array[i] = cam_of_get_named_gpio(soc_info->dev, of_node, "gpios", i);
 		CAM_DBG(CAM_UTIL, "gpio_array[%d] = %d", i, gpio_array[i]);
 	}
 

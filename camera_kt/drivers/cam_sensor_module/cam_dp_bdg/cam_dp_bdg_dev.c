@@ -10,11 +10,11 @@
 #include <linux/platform_device.h>
 #include <linux/of.h>
 #include <linux/workqueue.h>
-#include <linux/of_gpio.h>
 #include <linux/interrupt.h>
 #include <linux/delay.h>
 #include "cam_dp_bdg_core.h"
 #include "camera_main.h"
+#include "cam_compat.h"
 
 #define DP_BDG_IRQ_HANDLER_DEVNAME             "dp_bdg_irq_handler"
 #define DP_BDG_IRQ_HANDLER_MAGIC_NUM           0xff
@@ -178,7 +178,7 @@ static int dp_bdg_irq_handler_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 
-	dp_bdg_irq_gpio = of_get_named_gpio(pdev->dev.of_node,
+	dp_bdg_irq_gpio = cam_of_get_named_gpio(&pdev->dev, pdev->dev.of_node,
 		"dp_bdg_irq_pin", 0);
 	ret = gpio_request(dp_bdg_irq_gpio, "dp_bdg_irq_pin");
 	if (ret) {

@@ -12,7 +12,6 @@
  */
 
 #include <linux/of.h>
-#include <linux/of_gpio.h>
 #include <linux/pwm.h>
 #include "cam_ir_led_soc.h"
 #include "cam_res_mgr_api.h"
