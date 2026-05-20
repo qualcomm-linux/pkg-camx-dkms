@@ -43,13 +43,15 @@ MODULE_IMPORT_NS(DMA_BUF);
  *   kernel < 7.1 : delegates directly to of_get_named_gpio(np, propname, index)
  *
  *   kernel >= 7.1: reconstructs the integer GPIO number using only public APIs:
- *     1. of_parse_phandle_with_args(np, propname, "#gpio-cells", 0, index, &args)
- *        resolves the exact DT property name (no "-gpios" suffix appended),
- *        returning the gpio-chip device_node and the hardware pin number.
+ *     1. of_parse_phandle_with_args_map(np, propname, "gpio", index, &args)
+ *        mirrors what the kernel's own of_get_named_gpiod_flags() does:
+ *        it resolves the DT property and follows any gpio-map remapping,
+ *        returning the gpio-chip device_node and the hardware pin specifier.
  *     2. gpio_device_find_by_fwnode() locates the gpio_device for that node.
- *     3. gpio_device_get_base() + args.args[0] gives the Linux GPIO number,
- *        which is identical to what of_get_named_gpio() returned on old kernels.
- *     4. gpio_device_put() releases the reference from step 2.
+ *     3. gpio_device_get_chip() + gc->of_xlate() translates the DT specifier
+ *        to the chip-local hardware offset, exactly as the kernel does.
+ *     4. gpio_device_get_base() + hw_offset gives the Linux GPIO number.
+ *     5. gpio_device_put() releases the reference from step 2.
  *
  * All files that previously included <linux/of_gpio.h> only for the header
  * (no API calls) simply drop that include; cam_compat.h guards it internally.
@@ -63,10 +65,16 @@ static inline int cam_of_get_named_gpio(struct device *dev,
 {
 	struct of_phandle_args args;
 	struct gpio_device *gdev;
-	int base, ret;
+	struct gpio_chip *gc;
+	int base, hw_offset, ret;
 
-	ret = of_parse_phandle_with_args(np, propname, "#gpio-cells",
-					 index, &args);
+	/*
+	* Use the _map variant so that gpio-map remapping (e.g. on PMIC GPIO
+	* controllers) is handled identically to the kernel's own
+	* of_get_named_gpiod_flags() path.
+	*/
+	ret = of_parse_phandle_with_args_map(np, propname, "gpio",
+					     index, &args);
 	if (ret)
 		return ret;
 
@@ -75,10 +83,38 @@ static inline int cam_of_get_named_gpio(struct device *dev,
 	if (!gdev)
 		return -EPROBE_DEFER;
 
+	/*
+	* Translate the DT specifier to a chip-local hardware offset using
+	* the chip's of_xlate callback (same as of_xlate_and_get_gpiod_flags
+	* in gpiolib-of.c).  Fall back to args.args[0] for chips that have no
+	* custom xlate (the default of_gpio_twocell_xlate also returns args[0]).
+	*/
+	gc = gpio_device_get_chip(gdev);
+
+	/*
+	* NOTE: gc->of_xlate is called without holding the gpio_device lock.
+	* This is a best-effort translation; in practice the chip is stable
+	* during probe. A fully race-free path would use gpiod_get_index().
+	*/
+	if (gc && gc->of_xlate)
+		hw_offset = gc->of_xlate(gc, &args, NULL);
+	else
+		hw_offset = args.args[0];
+
 	base = gpio_device_get_base(gdev);
 	gpio_device_put(gdev);
 
-	return base + args.args[0];
+	if (hw_offset < 0)
+		return hw_offset;
+
+	if (base < 0)
+		return base;
+
+	CAM_DBG(CAM_UTIL,
+		"cam_of_get_named_gpio: base %d, hw_offset %d, total %d",
+		base, hw_offset, base + hw_offset);
+
+	return base + hw_offset;
 }
 #else
 #include <linux/of_gpio.h>
