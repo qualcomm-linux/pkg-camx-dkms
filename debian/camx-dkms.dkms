@@ -1,0 +1,11 @@
+PACKAGE_NAME="camx"
+PACKAGE_VERSION="#MODULE_VERSION#"
+AUTOINSTALL="yes"
+BUILD_EXCLUSIVE_CONFIG="CONFIG_VFIO"
+BUILD_EXCLUSIVE_KERNEL_MIN="6.16"
+
+# Update SUPPORTED_TARGETS when adding or removing a camera target
+SUPPORTED_TARGETS="qcm6490 qcs9100 qcs615 x1e80100"
+
+MAKE="bash ./dkms-build.sh ${kernelver} ${dkms_tree} ${PACKAGE_NAME} ${PACKAGE_VERSION}"
+CLEAN="bash ./dkms-clean.sh ${kernelver} ${dkms_tree} ${PACKAGE_NAME} ${PACKAGE_VERSION}"
