@@ -1,0 +1,26 @@
+Source: camx
+Section: non-free/kernel
+Priority: optional
+Maintainer: CamX Maintainers <camx.maintainers@qti.qualcomm.com>
+Build-Depends: debhelper-compat (= 13), dh-sequence-dkms, cpio
+Rules-Requires-Root: no
+Standards-Version: 4.7.2
+Homepage: https://github.com/qualcomm-linux/camera-driver
+
+Package: camx-dkms
+Architecture: arm64
+Depends: dkms (>= 2.2), init-system-helpers (>= 1.54~), ${misc:Depends}
+Recommends: linux-headers-generic, grub-efi-arm64
+Description: Qualcomm CamX camera driver (DKMS)
+ This package provides the CamX camera kernel modules built
+ using DKMS, allowing automatic rebuilds across kernel
+ updates. It is intended for Qualcomm platforms requiring
+ CamX support.
+
+Package: camx-uapi-dev
+Architecture: arm64
+Depends: ${misc:Depends}
+Description: CamX UAPI headers
+ Kernel UAPI headers for the CamX camera driver. These headers
+ define the kernel-userspace ABI and are required by userspace
+ libraries and applications that interact with CamX.

@@ -1,0 +1,50 @@
+#!/usr/bin/make -f
+
+include /usr/share/dpkg/pkg-info.mk
+
+DKMS_STAGED := debian/camx-dkms/usr/src/camx-$(DEB_VERSION_UPSTREAM)
+
+%:
+	dh $@
+
+override_dh_install:
+	install -d debian/camx-uapi-dev/usr/include/camx/camera/media
+	install -m 0644 \
+		camera/include/uapi/camera/media/*.h \
+		debian/camx-uapi-dev/usr/include/camx/camera/media/
+
+	install -d debian/camx-uapi-dev/usr/include/camx/camera-kodiak/media
+	install -m 0644 \
+		camera_kt/include/uapi/camera/media/*.h \
+		debian/camx-uapi-dev/usr/include/camx/camera-kodiak/media/
+
+	mkdir -p $(DKMS_STAGED)
+	find . -path ./debian -prune -o -path ./.pc -prune -o -print0 \
+		| cpio -0p $(DKMS_STAGED)/
+
+	install -m 0755 debian/dkms-build.sh $(DKMS_STAGED)/dkms-build.sh
+	install -m 0755 debian/dkms-clean.sh $(DKMS_STAGED)/dkms-clean.sh
+
+	dh_install
+
+# dh_dkms installs dkms.conf and generates the postinst/prerm maintainer
+# scripts that register and build the module on the target system.
+# After dh_dkms runs, append per-target BUILT_MODULE_NAME entries derived
+# from SUPPORTED_TARGETS in debian/camx-dkms.dkms.
+override_dh_dkms:
+	dh_dkms
+	. debian/camx-dkms.dkms && \
+	i=0 && \
+	for t in $$SUPPORTED_TARGETS; do \
+		printf 'BUILT_MODULE_NAME[%d]="camera_%s"\n' \
+			$$i $$t >> $(DKMS_STAGED)/dkms.conf && \
+		printf 'BUILT_MODULE_LOCATION[%d]="."\n' \
+			$$i >> $(DKMS_STAGED)/dkms.conf && \
+		printf 'DEST_MODULE_LOCATION[%d]="/updates/camera"\n' \
+			$$i >> $(DKMS_STAGED)/dkms.conf && \
+		i=$$((i+1)); \
+	done
+
+# DKMS handles the build on the target system
+override_dh_auto_clean override_dh_auto_build \
+override_dh_auto_test override_dh_auto_install:

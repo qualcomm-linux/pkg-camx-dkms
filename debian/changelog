@@ -1,0 +1,9 @@
+camx (1.0.0-1) UNRELEASED; urgency=medium
+
+  [ camx.maintainers ]
+  * Initial release.
+
+  [ GitHub Service Bot ]
+  * New upstream release
+
+ -- camx Maintainers <camx.maintainers@qti.qualcomm.com>  Thu, 28 May 2026 13:22:27 +0000
