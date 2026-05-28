@@ -1,11 +1,16 @@
 PACKAGE_NAME="camx"
+# dh_dkms replaces #MODULE_VERSION# at build time with upstream version extracted from debian/changelog
 PACKAGE_VERSION="#MODULE_VERSION#"
-AUTOINSTALL="yes"
-BUILD_EXCLUSIVE_CONFIG="CONFIG_VFIO"
-BUILD_EXCLUSIVE_KERNEL_MIN="6.16"
 
 # Update SUPPORTED_TARGETS when adding or removing a camera target
 SUPPORTED_TARGETS="qcm6490 qcs9100 qcs615 x1e80100"
 
+# Build command.
 MAKE="bash ./dkms-build.sh ${kernelver} ${dkms_tree} ${PACKAGE_NAME} ${PACKAGE_VERSION}"
 CLEAN="bash ./dkms-clean.sh ${kernelver} ${dkms_tree} ${PACKAGE_NAME} ${PACKAGE_VERSION}"
+AUTOINSTALL="yes"
+
+# Build this module only if target kernel was compiled with CONFIG_ARCH_QCOM
+BUILD_EXCLUSIVE_CONFIG="CONFIG_ARCH_QCOM"
+# Build this module only for kernels >= 6.16
+BUILD_EXCLUSIVE_KERNEL_MIN="6.16"
