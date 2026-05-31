@@ -126,6 +126,53 @@ static inline int cam_of_get_named_gpio(struct device *dev,
 }
 #endif
 
+#include <linux/gpio.h>
+static inline int cam_gpio_request_one(unsigned int gpio,
+				       unsigned long flags, const char *label)
+{
+	int rc;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 0, 0)
+	struct gpio_desc *desc;
+	struct gpio_chip *gc;
+	char *owner_label;
+#endif
+
+	rc = gpio_request_one(gpio, flags, label);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 0, 0)
+	if (rc == -EBUSY) {
+		/*
+		 * On kernel >= 7.0, CONFIG_GPIO_SHARED causes gpiolib-shared.c
+		 * to pre-claim any GPIO that appears in 2+ enabled DT nodes via
+		 * gpiod_request_commit(desc, "shared") at chip registration time.
+		 * This sets GPIOD_FLAG_REQUESTED before any driver runs, so the
+		 * first gpio_request_one() returns -EBUSY even though no real
+		 * driver owns the line.
+		 *
+		 * Verify the owner label is "shared" (the kernel shim's
+		 * hardcoded label) before releasing, so we never steal a GPIO
+		 * that is legitimately owned by another driver.
+		 */
+		desc = gpio_to_desc(gpio);
+		gc   = desc ? gpiod_to_chip(desc) : NULL;
+		owner_label = gc ?
+			gpiochip_dup_line_label(gc, gpiod_hwgpio(desc)) : NULL;
+
+		if (!IS_ERR_OR_NULL(owner_label) &&
+		    strcmp(owner_label, "shared") == 0) {
+			CAM_DBG(CAM_UTIL,
+				"gpio %u pre-owned by kernel shim, taking ownership",
+				gpio);
+			kfree(owner_label);
+			gpio_free(gpio);
+			rc = gpio_request_one(gpio, flags, label);
+		} else {
+			kfree(owner_label);
+		}
+	}
+#endif
+	return rc;
+}
+
 #ifdef CONFIG_DOMAIN_ID_SECURE_CAMERA
 #include <linux/IClientEnv.h>
 #include <linux/ITrustedCameraDriver.h>
