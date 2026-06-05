@@ -15,6 +15,7 @@
 #include "cam_res_mgr_api.h"
 #include "cam_res_mgr_private.h"
 #include "camera_main.h"
+#include "cam_compat.h"
 
 static struct cam_res_mgr *cam_res;
 
@@ -454,41 +455,14 @@ int cam_res_mgr_gpio_request(struct device *dev, uint gpio,
 	 *    from the gpio_res_list
 	 * These two situations both need request gpio.
 	 */
-	if (!gpio_found) {
-		CAM_DBG(CAM_RES, "gpio: %u not found in gpio_res list", gpio);
-		rc = gpio_request_one(gpio, flags, label);
+	if (!gpio_found && (!(cam_res_mgr_gpio_is_in_shared_pctrl_gpio(gpio)))) {
+		CAM_DBG(CAM_RES, "NonPinctrl gpio: %u not found in gpio_res list", gpio);
+
+		rc = cam_gpio_request_one(gpio, flags, label);
 		if (rc) {
-			/*
-			 * On kernel >= 7.1 the gpiolib shared-GPIO infrastructure
-			 * (CONFIG_GPIO_SHARED) pre-requests descriptors for any GPIO
-			 * that appears in multiple DT nodes, setting
-			 * GPIOD_FLAG_REQUESTED before any driver touches it.
-			 * gpio_request_one() therefore returns -EBUSY even for the
-			 * very first camera consumer.  If the GPIO is in our own
-			 * shared-GPIO list we know it is intentionally shared; treat
-			 * -EBUSY as "already owned by the kernel shim" and continue
-			 * so that the device is registered in gpio_res_list normally.
-			 * For any other error, or for non-shared GPIOs, propagate the
-			 * failure as before.
-			 */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 1, 0)
-			if (rc == -EBUSY &&
-			    cam_res->shared_gpio_enabled &&
-			    (cam_res_mgr_gpio_is_in_shared_gpio(gpio) ||
-			     cam_res_mgr_gpio_is_in_shared_pctrl_gpio(gpio))) {
-				CAM_DBG(CAM_RES,
-					"gpio %d:%s busy but shared, continuing",
-					gpio, label);
-				rc = 0;
-			} else {
-#endif
-				CAM_ERR(CAM_RES,
-					"gpio %d:%s request fails rc = %d",
-					gpio, label, rc);
-				goto end;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 1, 0)
-			}
-#endif
+			CAM_ERR(CAM_RES, "gpio %d:%s request fails rc = %d",
+				gpio, label, rc);
+			goto end;
 		}
 	}
 
@@ -661,10 +635,10 @@ static void cam_res_mgr_gpio_free(struct device *dev, uint gpio)
 			else {
 				CAM_ERR(CAM_RES, "Invalid PinCtrl Idx: %d", pctrl_idx);
 			}
+		} else {
+			CAM_DBG(CAM_RES, "freeing gpio: %u", gpio);
+			gpio_free(gpio);
 		}
-
-		CAM_DBG(CAM_RES, "freeing gpio: %u", gpio);
-		gpio_free(gpio);
 	}
 
 	mutex_unlock(&cam_res->gpio_res_lock);
