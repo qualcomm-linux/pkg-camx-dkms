@@ -1,4 +1,4 @@
-camx (1.0.2-1) UNRELEASED; urgency=medium
+camx (1.0.3-1) UNRELEASED; urgency=medium
 
   [ camx.maintainers ]
   * Initial release.
@@ -6,5 +6,6 @@ camx (1.0.2-1) UNRELEASED; urgency=medium
   [ GitHub Service Bot ]
   * New upstream release
   * New upstream release
+  * New upstream release
 
- -- GitHub Service Bot <githubservice@qti.qualcomm.com>  Fri, 29 May 2026 15:20:45 +0000
+ -- GitHub Service Bot <githubservice@qti.qualcomm.com>  Fri, 05 Jun 2026 05:23:32 +0000
