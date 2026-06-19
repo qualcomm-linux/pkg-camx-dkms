@@ -14,7 +14,27 @@ To create a new Debian package repository using this template:
 ## Branches
 
 - **qli-ci**: The primary branch containing workflow logic in the `.github/` folder, along with boilerplate documentation files such as license, contribution guidelines, and this README.
-- **debian/qcom-next**: An orphan branch with unrelated history from main. It contains a debian/ folder with template files. Its just to give a starting point and structure. The first job for the user templating from this repo will be to update this debian/ folder. The information about the name **debian/qcom-next** and other naming conventions can be found [here](https://qualcomm-confluence.atlassian.net/wiki/spaces/LinuxCoreOS/pages/2879858691/pkg-+repository+specification)
+- **qcom/debian/latest**: An orphan starter branch shipping a `debian/` directory layout. It is **not** meant to be used as-is for a real package; see [Setting up the packaging branch](#setting-up-the-packaging-branch) for how to construct your own `qcom/debian/latest`. Naming conventions are documented [here](https://qualcomm-confluence.atlassian.net/wiki/spaces/LinuxCoreOS/pages/2879858691/pkg-+repository+specification).
+
+## Setting up the packaging branch
+
+The `qcom/debian/latest` branch shipped with this template is an orphan
+starter — its history is unrelated to any real upstream codebase. When
+you fork this template for a real package, construct your own
+`qcom/debian/latest` branch as follows:
+
+1. Clone the upstream source repository.
+2. Branch off its development tip.
+3. Copy the `debian/` directory from this template's `qcom/debian/latest`
+   branch onto your new branch as one or more commits, and customize
+   the contents (`control`, `changelog`, `copyright`, etc.) for your
+   package.
+4. Push the result as `qcom/debian/latest` in your `pkg-*` repository.
+
+This ensures your packaging branch's history is rooted in the upstream
+code being packaged rather than being an orphan disconnected from
+upstream. This template cannot enforce that construction directly since
+it does not have access to your upstream repository.
 
 ## Workflows
 
