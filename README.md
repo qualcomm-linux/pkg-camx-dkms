@@ -106,8 +106,8 @@ Configure branch protection for `debian/**` and `qcom/**`:
 - Enable **"Automatically delete head branches"** for pull requests.
 - Allow only merge commits for pull request merges.
 - Enable **release immutability** in the upstream repository.
-- Add the Qualcomm Github Service bot as a user with write access :
-  - While the repo is private, add the Github user **qcom-service-bot**.
+- Add the Qualcomm Github Service bot as a user with the **Write** role:
+  - While the repo is private, add the Github user **qcom-service-bot** with the **Write** role.
   - If/when the repo is made public, there will be a big change in how the contributors are handled. 
     After that, the contributors list is cleared, and one need to re-enroll as a contributor. The way
     to do that is completely different from when the repo was private. When it was private, the creator
