@@ -9,16 +9,16 @@ To create a new Debian package repository using this template:
 1. Navigate to this repository's GitHub page and click the **"Use this template"** button located in the top right corner.
 2. Select **qualcomm-linux** as the organization in the drop-down menu. This is necessary.
 3. Name the new repository with the prefix `pkg-` to adhere to the naming convention for package repositories. This is necessary.
-4. Ensure the **"Include all branches"** option is enabled. Otherwise by default, only the default branch "main" is cloned.
+4. Ensure the **"Include all branches"** option is enabled. Otherwise by default, only the default branch "qli-ci" is cloned.
 
 ## Branches
 
-- **main**: The primary branch containing workflow logic in the `.github/` folder, along with boilerplate documentation files such as license, contribution guidelines, and this README.
+- **qli-ci**: The primary branch containing workflow logic in the `.github/` folder, along with boilerplate documentation files such as license, contribution guidelines, and this README.
 - **debian/qcom-next**: An orphan branch with unrelated history from main. It contains a debian/ folder with template files. Its just to give a starting point and structure. The first job for the user templating from this repo will be to update this debian/ folder. The information about the name **debian/qcom-next** and other naming conventions can be found [here](https://qualcomm-confluence.atlassian.net/wiki/spaces/LinuxCoreOS/pages/2879858691/pkg-+repository+specification)
 
 ## Workflows
 
-The `main` branch includes the following workflows in the `.github/workflows/` directory:
+The `qli-ci` branch includes the following workflows in the `.github/workflows/` directory:
 
 - **qcom-preflight-checks.yml**: A sanity check workflow inherited from the base Qualcomm template.
 - **stale-issues.yml**: A workflow for managing stale issues, also inherited from the base template.
