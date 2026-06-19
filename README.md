@@ -36,6 +36,22 @@ code being packaged rather than being an orphan disconnected from
 upstream. This template cannot enforce that construction directly since
 it does not have access to your upstream repository.
 
+## Validating your packaging locally
+
+Before pushing to the packaging branch, build the package and run
+[Lintian](https://lintian.debian.org/) against the resulting `.changes`
+to catch policy violations and common packaging mistakes before CI
+does:
+
+```sh
+gbp buildpackage   # or: dpkg-buildpackage -us -uc -b
+lintian -EviL +pedantic ../*.changes
+```
+
+The flags display experimental tags, info-level extended descriptions,
+and the strictest "pedantic" level. Address findings (or add justified
+entries to a `lintian-overrides` file) before opening a PR.
+
 ## Workflows
 
 The `qli-ci` branch includes the following workflows in the `.github/workflows/` directory:
