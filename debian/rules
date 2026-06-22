@@ -19,8 +19,11 @@ override_dh_install:
 		debian/camx-uapi-dev/usr/include/camx/camera-kodiak/media/
 
 	mkdir -p $(DKMS_STAGED)
-	find . -path ./debian -prune -o -path ./.pc -prune -o -print0 \
-		| cpio -0p $(DKMS_STAGED)/
+	# install sources; drop debian dir and dotfiles
+	find . -path ./debian -prune \
+	    -o -path './.*' -prune \
+	    -o -print0 \
+	    | cpio -0p $(DKMS_STAGED)/
 
 	install -m 0755 debian/dkms-build.sh $(DKMS_STAGED)/dkms-build.sh
 	install -m 0755 debian/dkms-clean.sh $(DKMS_STAGED)/dkms-clean.sh
