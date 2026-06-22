@@ -1,5 +1,5 @@
 Source: camx
-Section: non-free/kernel
+Section: contrib/kernel
 Priority: optional
 Maintainer: CamX Maintainers <camx.maintainers@qti.qualcomm.com>
 Build-Depends: debhelper-compat (= 13), dh-sequence-dkms, cpio
