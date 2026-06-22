@@ -12,7 +12,6 @@ Vcs-Git: https://github.com/qualcomm-linux/pkg-camx-dkms.git
 Package: camx-dkms
 Architecture: arm64
 Depends: ${misc:Depends}
-Recommends: linux-headers-generic
 Description: Qualcomm CamX camera driver (DKMS)
  This package provides the CamX camera kernel modules built
  using DKMS, allowing automatic rebuilds across kernel
