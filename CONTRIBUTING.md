@@ -11,10 +11,10 @@ Development happens directly on branch main. Open a PR targeting main
 ## Submitting a pull request
 
 1. Please read our [code of conduct](CODE-OF-CONDUCT.md) and [license](LICENSE.txt).
-1. [Fork](https://github.com/qualcomm-linux/pkg-template/fork) and clone the repository.
+1. [Fork](https://github.com/qualcomm-linux/pkg-camx-dkms/fork) and clone the repository.
 
     ```bash
-    git clone https://github.com/qualcomm-linux/pkg-template.git
+    git clone https://github.com/qualcomm-linux/pkg-camx-dkms.git
     ```
 
 1. Create a new branch based on `main`:
