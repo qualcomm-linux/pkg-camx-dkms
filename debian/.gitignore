@@ -1,0 +1,8 @@
+/.debhelper/
+/files
+/*.log
+/*.debhelper
+/*.substvars
+/camx-dkms/
+/camx-linux-dev/
+/debhelper-build-stamp
