@@ -8,15 +8,15 @@ DKMS_STAGED := debian/camx-dkms/usr/src/camx-$(DEB_VERSION_UPSTREAM)
 	dh $@
 
 override_dh_install:
-	install -d debian/camx-uapi-dev/usr/include/camx/camera/media
+	install -d debian/camx-linux-dev/usr/include/camx/camera/media
 	install -m 0644 \
 		camera/include/uapi/camera/media/*.h \
-		debian/camx-uapi-dev/usr/include/camx/camera/media/
+		debian/camx-linux-dev/usr/include/camx/camera/media/
 
-	install -d debian/camx-uapi-dev/usr/include/camx/camera-kodiak/media
+	install -d debian/camx-linux-dev/usr/include/camx/camera-kodiak/media
 	install -m 0644 \
 		camera_kt/include/uapi/camera/media/*.h \
-		debian/camx-uapi-dev/usr/include/camx/camera-kodiak/media/
+		debian/camx-linux-dev/usr/include/camx/camera-kodiak/media/
 
 	mkdir -p $(DKMS_STAGED)
 	# install sources; drop debian dir and dotfiles
