@@ -32,6 +32,7 @@ Description: Qualcomm CamX - DKMS kernel driver
 
 Package: camx-linux-dev
 Architecture: arm64
+Provides: camx-uapi-dev
 Depends: ${misc:Depends}
 Description: Qualcomm CamX - Linux kernel headers (UAPI)
  Qualcomm CamX is a camera enablement stack for Snapdragon platforms. It
