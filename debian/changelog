@@ -1,3 +1,9 @@
+camx (1.0.3-0qli1~bpo13+1) UNRELEASED; urgency=medium
+
+  * Backport for trixie.
+
+ -- Loïc Minier <loic.minier@oss.qualcomm.com>  Tue, 23 Jun 2026 20:05:55 +0200
+
 camx (1.0.3-0qli1~) UNRELEASED; urgency=medium
 
   * Initial release.
