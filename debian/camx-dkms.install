@@ -1,0 +1,5 @@
+# install all upstream sources; debian/rules excludes dotfiles and the debian
+# dir
+* usr/src/camx-${env:DEB_VERSION_UPSTREAM}
+debian/dkms-build usr/src/camx-${env:DEB_VERSION_UPSTREAM}
+debian/dkms-clean usr/src/camx-${env:DEB_VERSION_UPSTREAM}
