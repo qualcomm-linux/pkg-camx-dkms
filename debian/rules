@@ -1,6 +1,8 @@
 #!/usr/bin/make -f
 
 include /usr/share/dpkg/pkg-info.mk
+# used in debian/camx-dkms.install
+export DEB_VERSION_UPSTREAM
 
 DKMS_STAGED := debian/camx-dkms/usr/src/camx-$(DEB_VERSION_UPSTREAM)
 
@@ -8,27 +10,10 @@ DKMS_STAGED := debian/camx-dkms/usr/src/camx-$(DEB_VERSION_UPSTREAM)
 	dh $@
 
 override_dh_install:
-	install -d debian/camx-linux-dev/usr/include/camx/camera/media
-	install -m 0644 \
-		camera/include/uapi/camera/media/*.h \
-		debian/camx-linux-dev/usr/include/camx/camera/media/
-
-	install -d debian/camx-linux-dev/usr/include/camx/camera-kodiak/media
-	install -m 0644 \
-		camera_kt/include/uapi/camera/media/*.h \
-		debian/camx-linux-dev/usr/include/camx/camera-kodiak/media/
-
-	mkdir -p $(DKMS_STAGED)
-	# install sources; drop debian dir and dotfiles
-	find . -path ./debian -prune \
-	    -o -path './.*' -prune \
-	    -o -print0 \
-	    | cpio -0p $(DKMS_STAGED)/
-
-	install -m 0755 debian/dkms-build $(DKMS_STAGED)/dkms-build
-	install -m 0755 debian/dkms-clean $(DKMS_STAGED)/dkms-clean
-
-	dh_install
+	# camx-dkms.install file installs "*", so exclude debian dir
+	dh_install -X./debian
+	# manually copy these excluded scripts
+	cp -a debian/dkms-build debian/dkms-clean $(DKMS_STAGED)
 
 # dh_dkms installs dkms.conf and generates the postinst/prerm maintainer
 # scripts that register and build the module on the target system.
