@@ -30,7 +30,7 @@ Description: Qualcomm CamX - DKMS kernel driver
   * Sensor communication via I2C/CCI (Camera Control Interface)
   * Flash, actuator, and OIS (Optical Image Stabilization) sub-device control
 
-Package: camx-uapi-dev
+Package: camx-linux-dev
 Architecture: arm64
 Depends: ${misc:Depends}
 Description: Qualcomm CamX - Linux kernel headers (UAPI)
