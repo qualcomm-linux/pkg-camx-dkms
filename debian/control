@@ -2,7 +2,6 @@ Source: camx
 Section: contrib/kernel
 Maintainer: CamX Maintainers <camx.maintainers@qti.qualcomm.com>
 Build-Depends: debhelper-compat (= 13), dh-sequence-dkms, cpio
-Rules-Requires-Root: no
 Standards-Version: 4.7.2
 Homepage: https://github.com/qualcomm-linux/camera-driver
 Vcs-Browser: https://github.com/qualcomm-linux/pkg-camx-dkms
