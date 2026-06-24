@@ -26,7 +26,7 @@ fi
 
 BUILD_FAILED=0
 for ARCH in ${SUPPORTED_ARCH}; do
-    if make -C "${KERNEL_BUILD}" \
+    if make -j`nproc` -C "${KERNEL_BUILD}" \
             M="${BUILD_DIR}" \
             CAMERA_KERNEL_ROOT="${BUILD_DIR}" \
             CAMERA_ARCH="${ARCH}" \
