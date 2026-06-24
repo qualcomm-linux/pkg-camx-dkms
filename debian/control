@@ -14,16 +14,29 @@ Vcs-Git: https://github.com/qualcomm-linux/pkg-camx-dkms.git
 Package: camx-dkms
 Architecture: arm64
 Depends: ${misc:Depends}
-Description: Qualcomm CamX camera driver (DKMS)
- This package provides the CamX camera kernel modules built
- using DKMS, allowing automatic rebuilds across kernel
- updates. It is intended for Qualcomm platforms requiring
- CamX support.
+Description: Qualcomm CamX - DKMS kernel driver
+ Qualcomm CamX is a camera enablement stack for Snapdragon platforms. It
+ leverages a number of hardware blocks and software algorithms to
+ optimize the streaming of camera data.
+ .
+ This package provides the DKMS driver which is responsible for:
+  * Camera sensor management and configuration
+  * Image Signal Processor (ISP/Spectra) pipeline control
+  * Camera Request Manager (CRM) for multi-camera synchronization
+  * Memory management for camera buffers (ION/DMA)
+  * Power management and bandwidth voting for camera subsystems
+  * Camera hardware register programming (IFE, BPS, IPE, ICP, JPEG, CCI)
+  * Providing V4L2/media controller interface to userspace
+  * Sensor communication via I2C/CCI (Camera Control Interface)
+  * Flash, actuator, and OIS (Optical Image Stabilization) sub-device control
 
 Package: camx-uapi-dev
 Architecture: arm64
 Depends: ${misc:Depends}
-Description: CamX UAPI headers
- Kernel UAPI headers for the CamX camera driver. These headers
- define the kernel-userspace ABI and are required by userspace
- libraries and applications that interact with CamX.
+Description: Qualcomm CamX - Linux kernel headers (UAPI)
+ Qualcomm CamX is a camera enablement stack for Snapdragon platforms. It
+ leverages a number of hardware blocks and software algorithms to
+ optimize the streaming of camera data.
+ .
+ This package provides the Linux kernel headers specifically needed to
+ build userspace libraries and applications for CamX (UAPI).
