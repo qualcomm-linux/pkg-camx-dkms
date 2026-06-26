@@ -1,5 +1,6 @@
-camx-dkms (1.0.3-0qli1~) UNRELEASED; urgency=medium
+camx-dkms (1.0.3-0qli1) forky; urgency=medium
 
+  [ Loïc Minier ]
   * Initial release.
 
- -- Loïc Minier <loic.minier@oss.qualcomm.com>  Mon, 22 Jun 2026 01:26:29 +0200
+ -- root <root@f7e9c2dfb1e4>  Fri, 26 Jun 2026 15:10:57 +0000
