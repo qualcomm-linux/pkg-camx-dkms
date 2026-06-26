@@ -1,4 +1,4 @@
-Source: camx
+Source: camx-dkms
 Section: contrib/kernel
 Maintainer: CamX Maintainers <camx.maintainers@qti.qualcomm.com>
 Uploaders: Loïc Minier <loic.minier@oss.qualcomm.com>
