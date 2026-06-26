@@ -1,8 +1,9 @@
-camx-dkms (1.0.3-0qli1~bpo13+1) UNRELEASED; urgency=medium
+camx-dkms (1.0.3-0qli1~bpo13+1) trixie; urgency=medium
 
+  [ Loïc Minier ]
   * Backport for trixie.
 
- -- Loïc Minier <loic.minier@oss.qualcomm.com>  Tue, 23 Jun 2026 20:05:55 +0200
+ -- root <root@2534def5325d>  Fri, 26 Jun 2026 15:25:04 +0000
 
 camx-dkms (1.0.3-0qli1) forky; urgency=medium
 
