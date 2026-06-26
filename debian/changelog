@@ -1,3 +1,9 @@
+camx-dkms (1.0.3-0qli1~bpo14+1~) UNRELEASED; urgency=medium
+
+  * Unreleased changes
+
+ -- root <root@aa84644518ea>  Fri, 26 Jun 2026 15:27:25 +0000
+
 camx-dkms (1.0.3-0qli1~bpo13+1) trixie; urgency=medium
 
   [ Loïc Minier ]
