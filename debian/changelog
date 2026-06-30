@@ -1,12 +1,5 @@
-camx-dkms (1.0.3-0qli2~) UNRELEASED; urgency=medium
+camx-dkms (1.0.3-2~) UNRELEASED; urgency=medium
 
-  * Unreleased changes
+  * Update changelog for ubuntu.
 
- -- root <root@09bef387067d>  Fri, 26 Jun 2026 15:19:57 +0000
-
-camx-dkms (1.0.3-0qli1) forky; urgency=medium
-
-  [ Loïc Minier ]
-  * Initial release.
-
- -- root <root@f7e9c2dfb1e4>  Fri, 26 Jun 2026 15:10:57 +0000
+ -- Camx.deb.maintainer <Camx.deb.maintainers@qti.qualcomm.com>  Mon, 30 Jun 2026 00:00:00 +0000
