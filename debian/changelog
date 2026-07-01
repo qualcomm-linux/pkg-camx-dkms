@@ -1,5 +1,5 @@
-camx-dkms (1.0.3-0) UNRELEASED; urgency=medium
+camx-dkms (1.0.3-0) resolute; urgency=medium
 
   * Initial release.
 
- -- GitHub Service Bot <githubservice@qti.qualcomm.com>  Fri, 05 Jun 2026 05:23:32 +0000
+ -- GitHub Service Bot <githubservice@qti.qualcomm.com>  Wed, 01 Jul 2026 15:54:55 +0000
