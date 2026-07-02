@@ -13,7 +13,9 @@ Vcs-Git: https://github.com/qualcomm-linux/pkg-camx-dkms.git
 
 Package: camx-dkms
 Architecture: arm64
-Depends: ${misc:Depends}
+Depends:
+ ${misc:Depends},
+ dkms,
 Description: Qualcomm CamX - DKMS kernel driver
  Qualcomm CamX is a camera enablement stack for Snapdragon platforms. It
  leverages a number of hardware blocks and software algorithms to
