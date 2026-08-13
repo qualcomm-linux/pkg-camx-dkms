@@ -8,6 +8,7 @@ set -euo pipefail
 KERNEL_VER="${1}"
 BUILD_DIR="$(pwd)"
 KERNEL_BUILD="/lib/modules/${KERNEL_VER}/build"
+PARALLEL_JOBS="${PARALLEL_JOBS-$(nproc)}"
 
 {
     echo "#define CAMERA_COMPILE_TIME \"$(date)\""
@@ -26,7 +27,7 @@ fi
 
 BUILD_FAILED=0
 for ARCH in ${SUPPORTED_ARCH}; do
-    if make -j`nproc` -C "${KERNEL_BUILD}" \
+    if make "-j${PARALLEL_JOBS}" -C "${KERNEL_BUILD}" \
             M="${BUILD_DIR}" \
             CAMERA_KERNEL_ROOT="${BUILD_DIR}" \
             CAMERA_ARCH="${ARCH}" \
