@@ -7,8 +7,19 @@ set -euo pipefail
 
 KERNEL_VER="${1}"
 BUILD_DIR="$(pwd)"
-KERNEL_BUILD="/lib/modules/${KERNEL_VER}/build"
+# $5 is dkms's ${kernel_source_dir}: the kernel tree to build against. For a
+# normal on-target install it is /lib/modules/${KERNEL_VER}/build; when the
+# caller passes --kernelsourcedir it is a staged headers tree for a kernel that
+# is not installed. The fallback keeps this script runnable by hand.
+KERNEL_BUILD="${5:-/lib/modules/${KERNEL_VER}/build}"
 PARALLEL_JOBS="${PARALLEL_JOBS-$(nproc)}"
+
+if [ ! -d "${KERNEL_BUILD}" ]; then
+    echo "ERROR: kernel build directory not found: ${KERNEL_BUILD}" >&2
+    echo "       Install the matching kernel headers, or pass the tree to" >&2
+    echo "       build against via dkms --kernelsourcedir." >&2
+    exit 1
+fi
 
 {
     echo "#define CAMERA_COMPILE_TIME \"$(date)\""

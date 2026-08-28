@@ -5,7 +5,8 @@ set -euo pipefail
 
 KERNEL_VER="${1}"
 BUILD_DIR="$(pwd)"
-KERNEL_BUILD="/lib/modules/${KERNEL_VER}/build"
+# $5 is dkms's ${kernel_source_dir}; see debian/dkms-build for the details.
+KERNEL_BUILD="${5:-/lib/modules/${KERNEL_VER}/build}"
 
 make -C "${KERNEL_BUILD}" M="${BUILD_DIR}" clean 2>/dev/null || true
 rm -f "${BUILD_DIR}/cam_generated_h"
