@@ -1,3 +1,9 @@
+camx-dkms (1.0.3-0qli2qli+staging1~) UNRELEASED; urgency=medium
+
+  * Unreleased changes
+
+ -- Debusine Action Bot <noreply@bot.invalid>  Fri, 28 Aug 2026 15:14:26 +0000
+
 camx-dkms (1.0.3-0qli2) forky; urgency=medium
 
   [ root ]
