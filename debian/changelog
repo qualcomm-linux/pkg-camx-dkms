@@ -1,8 +1,25 @@
 camx-dkms (1.0.3-0qli2~) UNRELEASED; urgency=medium
 
+  [ root ]
   * Unreleased changes
 
- -- root <root@09bef387067d>  Fri, 26 Jun 2026 15:19:57 +0000
+  [ GitHub Service Bot ]
+  * chore: remove pull_request_target workflows
+  * chore: remove pull_request_target workflows
+
+  [ Christopher Obbard ]
+  * d/camx-dkms.dkms, d/dkms-build: obey dkms parallel_jobs
+  * d/t/control: generate tests using autodep8
+  * d/t/control: disable dkms-autopkgtest
+  * d/camx-dkms.dkms, d/dkms-build, d/dkms-clean: honour ${kernel_source_dir}
+  * d/dkms-build: do not use ARCH as the loop variable
+  * d/camx-dkms.dkms, d/dkms-build: obey dkms parallel_jobs
+  * d/t/control: generate tests using autodep8
+  * d/t/control: disable dkms-autopkgtest
+  * d/camx-dkms.dkms, d/dkms-build, d/dkms-clean: honour ${kernel_source_dir}
+  * d/dkms-build: do not use ARCH as the loop variable
+
+ -- Christopher Obbard <obbardc@debian.org>  Fri, 28 Aug 2026 08:17:15 +0100
 
 camx-dkms (1.0.3-0qli1) forky; urgency=medium
 
