@@ -4,10 +4,16 @@ PACKAGE_VERSION="#MODULE_VERSION#"
 # Update SUPPORTED_TARGETS when adding or removing a camera target
 SUPPORTED_TARGETS="qcm6490 qcs9100 qcs615 x1e80100"
 
+# ${kernel_source_dir} is the kernel tree to build against: dkms sets it to
+# /lib/modules/${kernelver}/build for a normal on-target install, and to
+# whatever --kernelsourcedir names when the module is built against a kernel
+# that is not installed. Pass it through rather than letting the scripts
+# reconstruct the installed-kernel path themselves.
+#
 # dkms only injects -j${parallel_jobs} into MAKE lines starting with "make";
 # so pass parallel_jobs to dkms-build explicitly
-MAKE="PARALLEL_JOBS='${parallel_jobs}' ./dkms-build ${kernelver} ${dkms_tree} ${PACKAGE_NAME} ${PACKAGE_VERSION}"
-CLEAN="./dkms-clean ${kernelver} ${dkms_tree} ${PACKAGE_NAME} ${PACKAGE_VERSION}"
+MAKE="PARALLEL_JOBS='${parallel_jobs}' ./dkms-build ${kernelver} ${dkms_tree} ${PACKAGE_NAME} ${PACKAGE_VERSION} ${kernel_source_dir}"
+CLEAN="./dkms-clean ${kernelver} ${dkms_tree} ${PACKAGE_NAME} ${PACKAGE_VERSION} ${kernel_source_dir}"
 AUTOINSTALL="yes"
 
 BUILD_EXCLUSIVE_CONFIG="CONFIG_ARCH_QCOM"
