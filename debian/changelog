@@ -1,8 +1,13 @@
-camx-dkms (1.0.3-0qli1~bpo14+1~) UNRELEASED; urgency=medium
+camx-dkms (1.0.3-0qli2) forky; urgency=medium
 
-  * Unreleased changes
+  [ Christopher Obbard ]
+  * d/camx-dkms.dkms, d/dkms-build: obey dkms parallel_jobs
+  * d/t/control: generate tests using autodep8
+  * d/t/control: disable dkms-autopkgtest
+  * d/camx-dkms.dkms, d/dkms-build, d/dkms-clean: honour ${kernel_source_dir}
+  * d/dkms-build: do not use ARCH as the loop variable
 
- -- root <root@aa84644518ea>  Fri, 26 Jun 2026 15:27:25 +0000
+ -- Debusine Action Bot <noreply@bot.invalid>  Fri, 28 Aug 2026 16:46:31 +0000
 
 camx-dkms (1.0.3-0qli1~bpo13+1) trixie; urgency=medium
 
