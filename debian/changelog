@@ -1,8 +1,9 @@
-camx-dkms (1.0.3-0qli2~bpo13+1~) UNRELEASED; urgency=medium
+camx-dkms (1.0.3-0qli2~bpo13+1) trixie; urgency=medium
 
+  [ Christopher Obbard ]
   * Rebuild for trixie-backports.
 
- -- Christopher Obbard <chris.obbard@oss.qualcomm.com>  Wed, 02 Sep 2026 16:06:34 +0100
+ -- Debusine Action Bot <noreply@bot.invalid>  Wed, 02 Sep 2026 15:08:47 +0000
 
 camx-dkms (1.0.3-0qli2) forky; urgency=medium
 
