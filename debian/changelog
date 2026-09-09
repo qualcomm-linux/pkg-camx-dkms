@@ -1,8 +1,12 @@
-camx-dkms (1.0.3-0qli3~) UNRELEASED; urgency=medium
+camx-dkms (1.0.6-0qli1~) UNRELEASED; urgency=medium
 
+  [ Debusine Action Bot ]
   * Unreleased changes
 
- -- Debusine Action Bot <noreply@bot.invalid>  Tue, 01 Sep 2026 09:20:08 +0000
+  [ GitHub Service Bot ]
+  * New upstream release
+
+ -- GitHub Service Bot <githubservice@qti.qualcomm.com>  Wed, 09 Sep 2026 09:23:12 +0000
 
 camx-dkms (1.0.3-0qli2) forky; urgency=medium
 
