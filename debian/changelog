@@ -1,8 +1,9 @@
-camx-dkms (1.0.6-0qli1~bpo13+1) UNRELEASED; urgency=medium
+camx-dkms (1.0.6-0qli1~bpo13+1) trixie; urgency=medium
 
+  [ Lukas Märdian ]
   * Backport for trixie.
 
- -- Lukas Märdian <lukas.maerdian@oss.qualcomm.com>  Thu, 10 Sep 2026 12:42:06 +0200
+ -- Debusine Action Bot <noreply@bot.invalid>  Thu, 10 Sep 2026 10:50:56 +0000
 
 camx-dkms (1.0.6-0qli1) forky; urgency=medium
 
