@@ -7,6 +7,7 @@ Build-Depends:
  dh-sequence-dkms,
  cpio,
 Standards-Version: 4.7.2
+Testsuite: autopkgtest-pkg-dkms
 Homepage: https://github.com/qualcomm-linux/camera-driver
 Vcs-Browser: https://github.com/qualcomm-linux/pkg-camx-dkms
 Vcs-Git: https://github.com/qualcomm-linux/pkg-camx-dkms.git

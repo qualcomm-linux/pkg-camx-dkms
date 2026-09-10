@@ -16,5 +16,5 @@ MAKE="PARALLEL_JOBS='${parallel_jobs}' ./dkms-build ${kernelver} ${dkms_tree} ${
 CLEAN="./dkms-clean ${kernelver} ${dkms_tree} ${PACKAGE_NAME} ${PACKAGE_VERSION} ${kernel_source_dir}"
 AUTOINSTALL="yes"
 
-BUILD_EXCLUSIVE_CONFIG="CONFIG_ARCH_QCOM"
+BUILD_EXCLUSIVE_CONFIG="CONFIG_ARCH_QCOM CONFIG_VIDEO_DEV"
 BUILD_EXCLUSIVE_KERNEL_MIN="6.16"

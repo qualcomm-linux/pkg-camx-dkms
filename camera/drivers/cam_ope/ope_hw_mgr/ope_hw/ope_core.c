@@ -493,6 +493,19 @@ static int dump_stripe_cmd(struct ope_frame_process *frm_proc,
 	return 0;
 }
 
+int cam_ope_validate_kmd_space(size_t total_buf_size,
+		uint32_t current_offset, size_t bytes_to_write)
+{
+	if (current_offset >= total_buf_size ||
+		(total_buf_size - current_offset) < bytes_to_write) {
+		CAM_ERR(CAM_OPE,
+			"OOB: Offset %u | Size %zu | Write_bytes %zu",
+			current_offset, total_buf_size, bytes_to_write);
+		return -EINVAL;
+	}
+	return 0;
+}
+
 int ope_validate_buff_offset(size_t buf_len,
 		struct ope_cmd_buf_info *cmd_buf)
 {
@@ -880,7 +893,7 @@ static uint32_t *ope_create_stripe_cmd(struct cam_ope_hw_mgr *hw_mgr,
 
 		if (frm_proc->cmd_buf[i][k].type == OPE_CMD_BUF_TYPE_DIRECT) {
 			size =
-				cdm_ops->cdm_required_size_indirect(frm_proc->cmd_buf[i][k].length);
+				cdm_ops->cdm_required_size_indirect();
 			kmd_buf = cdm_ops->cdm_write_indirect(
 				kmd_buf,
 				iova_addr,
@@ -909,7 +922,7 @@ static uint32_t *ope_create_stripe_cmd(struct cam_ope_hw_mgr *hw_mgr,
 					return NULL;
 				}
 
-				size = cdm_ops->cdm_required_size_dmi(dmi_cmd->length);
+				size = cdm_ops->cdm_required_size_dmi();
 				kmd_buf = cdm_ops->cdm_write_dmi(kmd_buf,
 					0, dmi_cmd->DMIAddr, dmi_cmd->DMISel,
 					dmi_cmd->addr, dmi_cmd->length);
@@ -1367,10 +1380,10 @@ static int cam_ope_dev_create_kmd_buf_nrt(struct cam_ope_hw_mgr *hw_mgr,
 	cam_ope_dev_prepare_cdm_request(ope_dev_prepare_req->hw_mgr,
 		ope_dev_prepare_req->prepare_args,
 		ope_dev_prepare_req->ctx_data, ope_dev_prepare_req->req_idx,
-		ope_dev_prepare_req->kmd_buf_offset, ope_dev_prepare_req,
+		kmd_buff_offset, ope_dev_prepare_req,
 		len, false);
 
-	ope_dev_prepare_req->kmd_buf_offset += len;
+	ope_dev_prepare_req->kmd_buf_offset = kmd_buff_offset + len;
 end:
 	return rc;
 }

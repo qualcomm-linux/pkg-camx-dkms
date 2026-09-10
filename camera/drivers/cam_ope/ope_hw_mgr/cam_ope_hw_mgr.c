@@ -479,6 +479,7 @@ end:
 static int cam_ope_mgr_put_cmd_buf(struct cam_packet *packet)
 {
 	int i = 0;
+	int rc = 0;
 	struct cam_cmd_buf_desc *cmd_desc = NULL;
 
 	cmd_desc = (struct cam_cmd_buf_desc *)
@@ -707,7 +708,7 @@ static void cam_ope_dump_req_data(struct cam_ope_request *ope_req)
 {
 	struct cam_ope_hang_dump *dump;
 	struct cam_packet *packet =
-		(struct cam_packet *)ope_req->hang_data.packet;
+		(struct cam_packet *)ope_req->hang_data.packet_handle;
 
 	if (!ope_req->ope_debug_buf.cpu_addr ||
 		ope_req->ope_debug_buf.len < sizeof(struct cam_ope_hang_dump) ||
@@ -868,7 +869,7 @@ static int32_t cam_ope_process_request_timer(void *priv, void *data)
 			.path_data_type -
 			CAM_AXI_PATH_DATA_OPE_START_OFFSET;
 
-		if (path_index >= CAM_OPE_MAX_PER_PATH_VOTES) {
+		if ((path_index < 0) || (path_index >= CAM_OPE_MAX_PER_PATH_VOTES)) {
 			CAM_WARN(CAM_OPE,
 				"Invalid path %d, start offset=%d, max=%d",
 				ctx_data->clk_info.axi_path[i]
@@ -1551,7 +1552,7 @@ static bool cam_ope_update_bw_v2(struct cam_ope_hw_mgr *hw_mgr,
 		ctx_data->clk_info.axi_path[i].path_data_type -
 		CAM_AXI_PATH_DATA_OPE_START_OFFSET;
 
-		if (path_index >= CAM_OPE_MAX_PER_PATH_VOTES) {
+		if ((path_index < 0) || (path_index >= CAM_OPE_MAX_PER_PATH_VOTES)) {
 			CAM_WARN(CAM_OPE,
 				"Invalid path %d, start offset=%d, max=%d",
 				ctx_data->clk_info.axi_path[i].path_data_type,
@@ -1588,7 +1589,7 @@ static bool cam_ope_update_bw_v2(struct cam_ope_hw_mgr *hw_mgr,
 		ctx_data->clk_info.axi_path[i].path_data_type -
 			CAM_AXI_PATH_DATA_OPE_START_OFFSET;
 
-		if (path_index >= CAM_OPE_MAX_PER_PATH_VOTES) {
+		if ((path_index < 0) || (path_index >= CAM_OPE_MAX_PER_PATH_VOTES)) {
 			CAM_WARN(CAM_OPE,
 				"Invalid path %d, start offset=%d, max=%d",
 				ctx_data->clk_info.axi_path[i].path_data_type,
@@ -1832,7 +1833,7 @@ end:
 	mutex_unlock(&ctx->ctx_mutex);
 }
 
-int32_t cam_ope_hw_mgr_cb(uint32_t irq_status, void *data)
+static int32_t cam_ope_hw_mgr_cb(uint32_t irq_status, void *data)
 {
 	int32_t rc = 0;
 	unsigned long flags;
@@ -1896,8 +1897,9 @@ static int cam_ope_mgr_create_kmd_buf(struct cam_ope_hw_mgr *hw_mgr,
 
 	ope_req->genirq_buff_info.handle         = ope_req->ope_kmd_buf.mem_handle;
 	ope_req->genirq_buff_info.cpu_addr       = (uint32_t *)ope_req->ope_kmd_buf.cpu_addr;
-	ope_req->genirq_buff_info.offset         = prepare_req.kmd_buf_offset;
-	ope_req->genirq_buff_info.used_bytes     = 0;
+	ope_req->genirq_buff_info.offset         = ope_req->ope_kmd_buf.offset +
+		prepare_req.kmd_buf_offset;
+	ope_req->genirq_buff_info.used_bytes     = prepare_req.kmd_buf_offset;
 	ope_req->genirq_buff_info.size           = ope_req->ope_kmd_buf.size -
 		ope_req->ope_kmd_buf.len - prepare_req.kmd_buf_offset;
 
@@ -2334,7 +2336,7 @@ static int cam_ope_mgr_process_cmd_buf_req(struct cam_ope_hw_mgr *hw_mgr,
 					ope_request->ope_kmd_buf.offset =
 						cmd_buf->offset;
 					ope_request->ope_kmd_buf.size =
-						cmd_buf->size;
+						cmd_buf->length;
 					is_kmd_buf_valid = true;
 					CAM_DBG(CAM_OPE, "kbuf:%x io:%x cdm:%x",
 					ope_request->ope_kmd_buf.cpu_addr,
@@ -2417,6 +2419,7 @@ static int cam_ope_mgr_process_cmd_desc(struct cam_ope_hw_mgr *hw_mgr,
 	struct cam_cmd_buf_desc *cmd_desc = NULL;
 	uintptr_t cpu_addr = 0;
 	uint32_t *cpu_addr_local = NULL, *cpu_addr_u = NULL;
+	int generic_cmd_buf_count = 0;
 
 	cmd_desc = (struct cam_cmd_buf_desc *)
 		((uint32_t *) &packet->payload_flex + packet->cmd_buf_offset/4);
@@ -2430,6 +2433,13 @@ static int cam_ope_mgr_process_cmd_desc(struct cam_ope_hw_mgr *hw_mgr,
 		if (cmd_desc[i].type != CAM_CMD_BUF_GENERIC ||
 			cmd_desc[i].meta_data == OPE_CMD_META_GENERIC_BLOB)
 			continue;
+		if (generic_cmd_buf_count > 0) {
+			CAM_ERR(CAM_OPE, "Multiple generic command buffers not supported");
+			rc = -EINVAL;
+			goto free_buf;
+		}
+
+		generic_cmd_buf_count++;
 		rc = cam_mem_get_cpu_buf(cmd_desc[i].mem_handle,
 			&cpu_addr, &len);
 		if (rc || !cpu_addr) {
@@ -3028,7 +3038,7 @@ static int cam_ope_mgr_remove_bw(struct cam_ope_hw_mgr *hw_mgr, int ctx_id)
 		ctx_data->clk_info.axi_path[i].path_data_type -
 		CAM_AXI_PATH_DATA_OPE_START_OFFSET;
 
-		if (path_index >= CAM_OPE_MAX_PER_PATH_VOTES) {
+		if ((path_index < 0) || (path_index >= CAM_OPE_MAX_PER_PATH_VOTES)) {
 			CAM_WARN(CAM_OPE,
 				"Invalid path %d, start offset=%d, max=%d",
 				ctx_data->clk_info.axi_path[i].path_data_type,
@@ -3491,7 +3501,7 @@ static int cam_ope_mgr_prepare_hw_update(void *hw_priv,
 	}
 
 	ope_req->cdm_cmd->genirq_buff             = &ope_req->genirq_buff_info;
-	ope_req->hang_data.packet                 = packet;
+	ope_req->hang_data.packet_handle          = (uintptr_t)packet;
 	prepare_args->num_hw_update_entries       = 1;
 	prepare_args->hw_update_entries[0].addr   = (uintptr_t)ope_req->cdm_cmd;
 	prepare_args->priv                        = ope_req;
@@ -3697,7 +3707,7 @@ static int cam_ope_mgr_hw_open_u(void *hw_priv, void *fw_download_args)
 	return rc;
 }
 
-static cam_ope_mgr_hw_close_u(void *hw_priv, void *hw_close_args)
+static int cam_ope_mgr_hw_close_u(void *hw_priv, void *hw_close_args)
 {
 	struct cam_ope_hw_mgr *hw_mgr;
 	int rc = 0;
@@ -4313,8 +4323,10 @@ static void cam_ope_mgr_dump_pf_data(
 	pf_req_info = hw_cmd_args->u.pf_cmd_args->pf_req_info;
 	rc = cam_packet_util_get_packet_addr(&packet, pf_req_info->packet_handle,
 		pf_req_info->packet_offset);
-	if (rc)
-		return rc;
+	if (rc) {
+		CAM_ERR(CAM_OPE, "Failed to get packet addr rc=%d", rc);
+		return;
+	}
 	ope_request = pf_req_info->req;
 
 	ope_pid_mid_args.fault_mid =  pf_args->pf_smmu_info->mid;
