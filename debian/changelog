@@ -1,8 +1,19 @@
-camx-dkms (1.0.3-0qli2~bpo13+2~) UNRELEASED; urgency=medium
+camx-dkms (1.0.6-0qli1~bpo13+1) UNRELEASED; urgency=medium
 
-  * Unreleased changes
+  * Backport for trixie.
 
- -- Debusine Action Bot <noreply@bot.invalid>  Wed, 02 Sep 2026 15:15:12 +0000
+ -- Lukas Märdian <lukas.maerdian@oss.qualcomm.com>  Thu, 10 Sep 2026 12:42:06 +0200
+
+camx-dkms (1.0.6-0qli1) forky; urgency=medium
+
+  [ GitHub Service Bot ]
+  * New upstream release
+
+  [ Lukas Märdian ]
+  * d/control: Add basic autopkgtests.
+  * d/camx-dkms: Exclude cloud-kernel that does not ship the video/camera stack.
+
+ -- Debusine Action Bot <noreply@bot.invalid>  Thu, 10 Sep 2026 07:54:50 +0000
 
 camx-dkms (1.0.3-0qli2~bpo13+1) trixie; urgency=medium
 
@@ -27,7 +38,7 @@ camx-dkms (1.0.3-0qli1~bpo13+1) trixie; urgency=medium
   [ Loïc Minier ]
   * Backport for trixie.
 
- -- root <root@2534def5325d>  Fri, 26 Jun 2026 15:25:04 +0000
+ -- Debusine Action Bot <noreply@bot.invalid>  Fri, 26 Jun 2026 15:25:04 +0000
 
 camx-dkms (1.0.3-0qli1) forky; urgency=medium
 
