@@ -1,12 +1,13 @@
 camx-dkms (1.0.6-0qli1~) UNRELEASED; urgency=medium
 
-  [ Debusine Action Bot ]
-  * Unreleased changes
-
   [ GitHub Service Bot ]
   * New upstream release
 
- -- GitHub Service Bot <githubservice@qti.qualcomm.com>  Wed, 09 Sep 2026 09:23:12 +0000
+  [ Lukas Märdian ]
+  * d/control: Add basic autopkgtests.
+  * d/camx-dkms: Exclude cloud-kernel that does not ship the video/camera stack.
+
+ -- Lukas Märdian <lukas.maerdian@oss.qualcomm.com>  Thu, 10 Sep 2026 09:15:10 +0200
 
 camx-dkms (1.0.3-0qli2) forky; urgency=medium
 
@@ -24,4 +25,4 @@ camx-dkms (1.0.3-0qli1) forky; urgency=medium
   [ Loïc Minier ]
   * Initial release.
 
- -- root <root@f7e9c2dfb1e4>  Fri, 26 Jun 2026 15:10:57 +0000
+ -- Debusine Action Bot <noreply@bot.invalid>  Fri, 26 Jun 2026 15:10:57 +0000
