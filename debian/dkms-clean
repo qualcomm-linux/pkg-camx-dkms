@@ -5,7 +5,7 @@ set -euo pipefail
 
 KERNEL_VER="${1}"
 BUILD_DIR="$(pwd)"
-KERNEL_BUILD="/lib/modules/${KERNEL_VER}/build"
+KERNEL_BUILD="${5:-/lib/modules/${KERNEL_VER}/build}"
 
 make -C "${KERNEL_BUILD}" M="${BUILD_DIR}" clean 2>/dev/null || true
 rm -f "${BUILD_DIR}/cam_generated_h"
