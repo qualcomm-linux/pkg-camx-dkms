@@ -421,6 +421,7 @@ struct cam_ife_virtual_rdi_mapping {
  * @offline_sfe_clk         SFE Clock value to be configured for offline processing
  * @mapping_table:          mapping between virtual rdi and acquired rdi
  * @pri_rdi_out_res:        Primary RDI res for RDI only cases
+ * @commit_served_ctx_on_rup: Commit served ctx on RUP for HW without a real EPOCH
  */
 
 struct cam_ife_hw_concrete_ctx {
@@ -503,6 +504,7 @@ struct cam_ife_hw_concrete_ctx {
 	uint32_t                             offline_sfe_clk;
 	struct cam_ife_virtual_rdi_mapping   mapping_table;
 	uint32_t                             pri_rdi_out_res;
+	bool                                 commit_served_ctx_on_rup;
 };
 
 /**
@@ -962,6 +964,8 @@ int cam_ife_hw_mgr_event_handler(void *priv, uint32_t evt_id, void *evt_info);
 int cam_ife_hw_mgr_put_res(struct list_head *src_list, struct cam_isp_hw_mgr_res  **res);
 int cam_ife_hw_mgr_is_rdi_res(uint32_t res_id);
 bool cam_ife_hw_mgr_is_csid_rdi_path(uint32_t res_id);
+struct cam_ife_csid_hw_caps *cam_ife_hw_mgr_get_csid_hw_caps(
+	struct cam_ife_hw_mgr_ctx *ife_ctx);
 bool cam_ife_hw_mgr_is_virtual_rdi_out_res(uint32_t res_id);
 bool cam_isp_is_ctx_primary_rdi(struct cam_ife_hw_mgr_ctx  *ctx);
 bool cam_ife_hw_mgr_is_ife_out_port(uint32_t res_id);

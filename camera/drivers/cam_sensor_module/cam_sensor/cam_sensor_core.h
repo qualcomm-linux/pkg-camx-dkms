@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2017-2018,2020, The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2024, Qualcomm Innovation Center, Inc. All rights reserved.
+ *Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #ifndef _CAM_SENSOR_CORE_H_
@@ -115,6 +115,26 @@ int cam_sensor_process_evt(struct cam_req_mgr_link_evt_data *evt_data);
  * This API handles the camera control argument reached to sensor
  */
 int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl, void *arg);
+
+/**
+ * @s_ctrl:              Sensor contributing this fsync configuration; the first
+ *                       caller becomes the group's GPIO queue owner
+ * @tpoint:              Trigger point stage of type enum
+ *                       cci_timer_fsync_trigger_point at which to fire the
+ *                       GPIO fsync (ACQUIRE or STREAM_ON)
+ * @refcount_to_trigger: Number of sensors that must reach @tpoint before the
+ *                       GPIO queue is started
+ *
+ * Stores the GPIO fsync trigger point and reference count decoded from a
+ * SYNC_INFO blob into the shared trigger tracker. Called once per participant
+ * from the fsync blob handler with identical parameters, so it is idempotent:
+ * an already-tracked configuration is left untouched rather than rewinding the
+ * count that earlier participants contributed.
+ */
+void cam_sensor_fsync_trigger_set(
+	struct cam_sensor_ctrl_t *s_ctrl,
+	uint32_t tpoint,
+	uint32_t refcount_to_trigger);
 
 /**
  * @s_ctrl: Sensor ctrl structure
