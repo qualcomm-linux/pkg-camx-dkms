@@ -26,6 +26,7 @@
 #include <cam_sensor_io.h>
 #include "cam_debug_util.h"
 #include "cam_context.h"
+#include "cam_sensor_fsync.h"
 
 #define NUM_MASTERS 2
 #define NUM_QUEUES 2
@@ -125,6 +126,16 @@ struct cam_sensor_dev_res_info {
  * @aon_pmic_bridge_required: Sensor requires APPS-side regulator control for AON
  * @hw_no_probe_pw_ops: Skip power operations during probe
  * @pwr_ref_cnt : Ref counter for pwr up and pwr down.
+ * @fsync_blob_ready: Valid SYNC_INFO blob decoded for current trigger group;
+ *                    consumed once to set external_trigger then cleared
+ * @per_frame_fsync:  Per-request GPIO fsync slots; one cmd_buf per queue
+ *                    needed, indexed by req_id % MAX_PER_FRAME_ARRAY
+ * @fsync_infinite:   Stage-triggered (infinite mode) GPIO fsync configuration.
+ *                    Kept out of per_frame_fsync[] because it is armed at a
+ *                    stage boundary (ACQUIRE / STREAM_ON) where no request
+ *                    exists, so it cannot be keyed on a request id.
+ * @fsync_counted:    This sensor has already been counted towards the shared
+ *                    fsync trigger refcount for the current cycle
  */
 struct cam_sensor_ctrl_t {
 	char                           device_name[CAM_CTX_DEV_NAME_MAX_LENGTH];
@@ -167,6 +178,10 @@ struct cam_sensor_ctrl_t {
 	struct wakeup_source           *aon_ws;
 	bool                           aon_pmic_bridge_required;
 	bool                           hw_no_probe_pw_ops;
+	bool                           fsync_blob_ready;
+	struct cam_sensor_fsync_slot   *per_frame_fsync;
+	struct cam_sensor_fsync_slot   fsync_infinite;
+	bool                           fsync_counted;
 #ifdef CONFIG_SPECTRA_SENSOR_SYSFS_UTIL
 	uint8_t                        pwr_ref_cnt;
 	struct kobject                 sysfs_kobj;
