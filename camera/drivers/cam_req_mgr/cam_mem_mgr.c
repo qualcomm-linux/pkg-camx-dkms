@@ -813,7 +813,7 @@ static int cam_mem_mgr_get_dma_heaps(void)
 	tbl.secure_display_heap = dma_heap_find("qcom,display");
 	if (IS_ERR_OR_NULL(tbl.secure_display_heap)) {
 		rc = PTR_ERR(tbl.secure_display_heap);
-		CAM_ERR(CAM_MEM, "qcom,display heap not found, rc=%d",
+		CAM_DBG(CAM_MEM, "qcom,display heap not found, rc=%d",
 			rc);
 		tbl.secure_display_heap = NULL;
 		goto put_heaps;
@@ -1012,6 +1012,9 @@ static int cam_mem_util_get_dma_buf(size_t len,
 		}
 	}
 #else
+	if (tbl.force_cache_allocs && !(cam_flags & CAM_MEM_FLAG_PROTECTED_MODE))
+		cam_flags |= CAM_MEM_FLAG_CACHE;
+
 	CAM_DBG(CAM_MEM, "Using cmm_alloc_buffer for allocation, len=%zu, flags=0x%x", len, cam_flags);
 	*buf = cmm_alloc_buffer(len, cam_flags);
 	if (IS_ERR_OR_NULL(*buf)) {

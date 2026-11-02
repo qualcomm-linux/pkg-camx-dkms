@@ -35,6 +35,12 @@
 #include "cam_req_mgr_workq.h"
 #include "cam_common_util.h"
 
+#define CCI_GPIO_Q0_MAX_WORD_COUNT 32
+#define CCI_GPIO_Q1_MAX_WORD_COUNT 16
+#define CCI_GPIO_Q2_MAX_WORD_COUNT 16
+
+#define CCI_MAX_GPIO_QUEUE_SIZE 32
+
 #define CCI_I2C_QUEUE_0_SIZE 128
 #define CCI_I2C_QUEUE_1_SIZE 32
 #define CCI_I2C_QUEUE_0_SIZE_V_1_2 64
@@ -45,6 +51,7 @@
 #define CCI_TIMEOUT msecs_to_jiffies(1500)
 #define NUM_QUEUES 2
 
+#define CCI_GPIO_QUEUE_LOAD_ADDR(queue) (CCI_GPIO_LOAD_ADDR + (0x100 * queue))
 #define MSM_CCI_WRITE_DATA_PAYLOAD_SIZE_11 11
 #define MSM_CCI_WRITE_DATA_PAYLOAD_SIZE_WORDS ((MSM_CCI_WRITE_DATA_PAYLOAD_SIZE_11 + 1) / 4)
 #define BURST_MIN_FREE_SIZE 8
@@ -78,34 +85,32 @@
 
 #define CCI_VERSION_1_2_9 0x10020009
 #define REPORT_IDSIZE 16
+
+#define CCI_FREQ_KHZ                   37500
+#define CCI_FREQ_KHZ_TO_MHZ_DIV        1000
+#define CCI_NS_TO_US_DIV               1000
+#define CCI_GPIO_MAX_DELAY_28BIT_TIMER 0xFFFFFFF
+#define CCI_GPIO_MAX_DELAY_14BIT_TIMER 0x7FFF
+#define NSEC_TO_CCI_CLK_CYCLES(x) \
+	(((x * CCI_FREQ_KHZ) / CCI_FREQ_KHZ_TO_MHZ_DIV) / CCI_NS_TO_US_DIV)
+
+
 enum cci_i2c_sync {
 	MSM_SYNC_DISABLE,
 	MSM_SYNC_ENABLE,
-};
-
-enum cam_cci_cmd_type {
-	MSM_CCI_INIT,
-	MSM_CCI_RELEASE,
-	MSM_CCI_SET_SID,
-	MSM_CCI_SET_FREQ,
-	MSM_CCI_SET_SYNC_CID,
-	MSM_CCI_I2C_READ,
-	MSM_CCI_I2C_WRITE,
-	MSM_CCI_I2C_WRITE_SEQ,
-	MSM_CCI_I2C_WRITE_BURST,
-	MSM_CCI_I2C_WRITE_ASYNC,
-	MSM_CCI_GPIO_WRITE,
-	MSM_CCI_I2C_WRITE_SYNC,
-	MSM_CCI_I2C_WRITE_SYNC_BLOCK,
-	MSM_CCI_I2C_READ_APPEND_WRITE,
-	MSM_CCI_I2C_SEQUENTIAL_XFER_LOCK,
-	MSM_CCI_I2C_SEQUENTIAL_XFER_UNLOCK
 };
 
 enum cci_i2c_queue_t {
 	QUEUE_0,
 	QUEUE_1,
 	QUEUE_INVALID,
+};
+
+enum cci_gpio_queue {
+	GPIO_Q0 = 0,
+	GPIO_Q1,
+	GPIO_Q2,
+	GPIO_Q_MAX,
 };
 
 struct cam_cci_wait_sync_cfg {
@@ -184,6 +189,30 @@ struct cam_cci_clk_params_t {
 enum cam_cci_state_t {
 	CCI_STATE_ENABLED,
 	CCI_STATE_DISABLED,
+};
+
+enum cam_cci_timer_cmd_type {
+	CCI_TIMER_SYNC_TOGETHER,
+	CCI_TIMER_SYNC_INDEPENDNET,
+};
+
+struct cam_cci_gpio_fsync_cfg {
+	struct mutex gpio_q_mutex;
+	int fps;
+	bool is_acquired;
+	enum cam_cci_timer_cmd_type fsync_cmd_type;
+};
+
+/**
+ * struct cam_cci_gpio_cmd_buf - CCI GPIO command buffer
+ * @cmd_count:     Number of commands in the buffer
+ * @cmd_buf_ready: Flag indicating buffer is ready to load
+ * @buf:           Array of GPIO commands
+ */
+struct cam_cci_gpio_cmd_buf {
+	uint8_t cmd_count;
+	bool cmd_buf_ready;
+	uint32_t buf[CCI_MAX_GPIO_QUEUE_SIZE];
 };
 
 #ifdef CONFIG_SPECTRA_SENSOR_SYSFS_UTIL
@@ -268,6 +297,7 @@ struct cci_device {
 	enum cam_cci_state_t cci_state;
 	struct cam_cci_i2c_queue_info
 		cci_i2c_queue_info[MASTER_MAX][NUM_QUEUES];
+	struct cam_cci_gpio_fsync_cfg gpio_queue[GPIO_Q_MAX];
 	struct cam_cci_master_info cci_master_info[MASTER_MAX];
 	enum i2c_freq_mode i2c_freq_mode[MASTER_MAX];
 	uint8_t master_active_slave[MASTER_MAX];
@@ -345,6 +375,8 @@ struct cam_sensor_cci_client {
 	uint16_t cci_device;
 	bool is_probing;
 	bool is_master_owned;
+	int acquired_gpio_queue;
+	struct cam_cci_gpio_cmd_buf cmd_buf;
 };
 
 struct cam_cci_ctrl {
@@ -397,5 +429,74 @@ int cam_cci_init_module(void);
  * @brief : API to remove CCI Hw from platform framework.
  */
 void cam_cci_exit_module(void);
+
+/**
+ * cam_cci_fsync_core_cfg - Handle fsync-related CCI commands
+ * @sd:       Pointer to V4L2 subdevice
+ * @cci_ctrl: Pointer to CCI control structure
+ *
+ * Dispatches MSM_CCI_TIMER_FSYNC_INDEPENDENT, MSM_CCI_GPIO_QUEUE_HALT,
+ * and MSM_CCI_GPIO_QUEUE_START commands to their respective handlers.
+ *
+ * Returns: 0 on success, negative error code on failure
+ */
+int cam_cci_fsync_core_cfg(struct v4l2_subdev *sd,
+	struct cam_cci_ctrl *cci_ctrl);
+
+/**
+ * cam_cci_fill_gpio_cmd_buffer - Add a GPIO command to the command buffer
+ * @gpio_cmds: Pointer to GPIO command buffer
+ * @op:        GPIO command type (enum cam_cci_gpio_cmd_type)
+ * @val:       Command value
+ *
+ * Returns: 0 on success, negative error code on failure
+ */
+int cam_cci_fill_gpio_cmd_buffer(struct cam_cci_gpio_cmd_buf *gpio_cmds,
+	int op, uint32_t val);
+
+/**
+ * cam_cci_timing_schema_to_cmd_buf - Convert timing schema to GPIO commands
+ * @schema:  Pointer to GPIO timing schema
+ * @cmd_buf: Pointer to command buffer to fill
+ *
+ * Returns: 0 on success, negative error code on failure
+ */
+int cam_cci_timing_schema_to_cmd_buf(struct cci_gpio_timing_schema *schema,
+	struct cam_cci_gpio_cmd_buf *cmd_buf);
+
+/**
+ * cam_cci_build_infinite_mode_cmd_buf - Convert timing schema to GPIO
+ *                                       commands for infinite frequency mode
+ * @schema:  Pointer to GPIO timing schema
+ * @cmd_buf: Pointer to command buffer to fill
+ *
+ * Builds on cam_cci_timing_schema_to_cmd_buf() by wrapping the converted
+ * commands with CCI_GPIO_REPEAT_CMD (prepended) and CCI_GPIO_REPORT_CMD +
+ * CCI_GPIO_CONTINUE_CMD (appended), so the GPIO queue loops indefinitely
+ * instead of running once. Used when repeat_freq_info.freq_mode is
+ * CCI_TIMER_INFINITE_FRAME.
+ *
+ * Returns: 0 on success, negative error code on failure
+ */
+int cam_cci_build_infinite_mode_cmd_buf(struct cci_gpio_timing_schema *schema,
+	struct cam_cci_gpio_cmd_buf *cmd_buf);
+
+/**
+ * cam_cci_write_gpio_cmd_buf - Write a GPIO command buffer's words into the
+ *                              CCI GPIO queue load register
+ * @base:     CCI hardware register base
+ * @reg_addr: GPIO queue load register address (from
+ *            CCI_GPIO_QUEUE_LOAD_ADDR())
+ * @cmd_buf:  Pointer to command buffer to write
+ *
+ * Common primitive that writes each word of an already-built GPIO command
+ * buffer into hardware. It has no knowledge of frequency mode, REPEAT, or
+ * REPORT semantics -- it is shared by infinite mode, manual trigger mode,
+ * and any other mode that stages commands into a struct cam_cci_gpio_cmd_buf.
+ *
+ * Returns: 0 on success, negative error code on failure
+ */
+int cam_cci_write_gpio_cmd_buf(void __iomem *base, uint32_t reg_addr,
+	const struct cam_cci_gpio_cmd_buf *cmd_buf);
 
 #endif /* _CAM_CCI_DEV_H_ */

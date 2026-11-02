@@ -546,7 +546,7 @@ static struct cam_ife_csid_ver2_csi2_rx_reg_info
 		.part_fatal_err_mask             = {0x000FF000, 0x0,},
 		.non_fatal_err_mask              = {0x08000000, 0x0,},
 		.top_irq_mask                    = {0x4, 0x0,},
-		.rx_rx2_irq_mask                 = 0x18,
+		.rx_rx2_irq_mask                 = 0x80000000,
 };
 
 static struct cam_ife_csid_ver2_common_reg_info
@@ -656,6 +656,7 @@ static struct cam_ife_csid_ver2_common_reg_info
 	.capabilities                            = CAM_IFE_CSID_CAP_SPLIT_RUP_AUP |
 						CAM_IFE_CSID_CAP_SKIP_EPOCH_CFG,
 	.top_top2_irq_mask                       = 0x80000000,
+	.yuv_chroma_conversion_enable_val         = 0x8,
 };
 
 static struct cam_ife_csid_ver2_path_reg_info
@@ -1319,6 +1320,7 @@ static struct cam_ife_csid_ver2_path_reg_info
 		.debug_byte_cntr_rst_shift_val	= 2,
 		.offline_mode_en_shift_val	= 2,
 		.ccif_violation_en		= 1,
+		.capabilities			= CAM_IFE_CSID_CAP_YUV_CHROMA_CONVERSION,
 		.fatal_err_mask			= 0x186004,
 		.non_fatal_err_mask		= 0x10000000,
 		.sof_irq_mask			= 0x10,
@@ -1416,6 +1418,7 @@ static struct cam_ife_csid_ver2_path_reg_info
 		.debug_byte_cntr_rst_shift_val	= 2,
 		.offline_mode_en_shift_val	= 2,
 		.ccif_violation_en		= 1,
+		.capabilities			= CAM_IFE_CSID_CAP_YUV_CHROMA_CONVERSION,
 		.fatal_err_mask			= 0x186004,
 		.non_fatal_err_mask		= 0x10000000,
 		.sof_irq_mask			= 0x10,

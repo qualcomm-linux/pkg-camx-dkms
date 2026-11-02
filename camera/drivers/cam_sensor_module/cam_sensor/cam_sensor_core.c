@@ -8,6 +8,7 @@
 #include <cam_sensor_cmn_header.h>
 #include "cam_sensor_core.h"
 #include "cam_sensor_util.h"
+#include "cam_sensor_fsync.h"
 #include "cam_soc_util.h"
 #include "cam_trace.h"
 #include "cam_common_util.h"
@@ -19,6 +20,214 @@
 #define CAM_SENSOR_PIPELINE_DELAY_MASK        0xFF
 #define CAM_SENSOR_MODESWITCH_DELAY_SHIFT     8
 #define CAM_SENSOR_AON_POWER_TOGGLE_MARKER    0x414F4E50U
+
+extern struct completion *cam_sensor_get_i3c_completion(uint32_t index);
+
+
+/**
+ * struct cam_sensor_fsync_trigger_ctrl - Shared GPIO fsync trigger tracker
+ * @lock:                Protects the fields below across sensor instances. The
+ *                       per-sensor s_ctrl->cam_sensor_mutex cannot be used since
+ *                       each sensor participating in the sync uses a different
+ *                       mutex.
+ * @valid:               Set once a SYNC_INFO blob has populated tpoint /
+ *                       refcount_to_trigger.
+ * @tpoint:              Trigger point stage of type enum
+ *                       cci_timer_fsync_trigger_point at which to fire the GPIO
+ *                       fsync (ACQUIRE or STREAM_ON).
+ * @refcount_to_trigger: Number of sensors that must reach @tpoint before the
+ *                       GPIO queue is started.
+ * @refcount:            Running count of sensors that have reached @tpoint for
+ *                       the current sync cycle.
+ * @master_sensor:       Sensor that owns the GPIO queue for this sync group;
+ *                       the first participant to configure fsync. Its
+ *                       fsync_infinite slot is the one programmed when the
+ *                       trigger fires. Cleared when that sensor releases or
+ *                       shuts down, so the pointer never outlives it.
+ *
+ * A single static instance is shared by all sensor devices. When a SYNC_INFO
+ * blob is decoded (cam_sensor_fsync_handle_blob), the requested @tpoint and
+ * @refcount_to_trigger are stored here via cam_sensor_fsync_trigger_set().
+ * Each sensor that reaches the stored @tpoint is counted once into @refcount;
+ * once @refcount_to_trigger participants have arrived, the GPIO queue is
+ * started via cam_sensor_fsync_apply() and @refcount is rearmed for the next
+ * cycle. Only infinite frequency mode is handled (no per-frame request is
+ * expected), so the configuration is applied with
+ * CAM_SENSOR_FSYNC_REQ_ID_NONE.
+ */
+static struct cam_sensor_fsync_trigger_ctrl {
+	struct mutex lock;
+	bool         valid;
+	uint32_t     tpoint;
+	uint32_t     refcount_to_trigger;
+	uint32_t     refcount;
+	struct cam_sensor_ctrl_t *master_sensor;
+} g_fsync_trigger = {
+	.lock                = __MUTEX_INITIALIZER(g_fsync_trigger.lock),
+	.valid               = false,
+	.tpoint              = 0,
+	.refcount_to_trigger = 0,
+	.refcount            = 0,
+	.master_sensor       = NULL,
+};
+
+void cam_sensor_fsync_trigger_set(
+	struct cam_sensor_ctrl_t *s_ctrl,
+	uint32_t tpoint, uint32_t refcount_to_trigger)
+{
+	mutex_lock(&g_fsync_trigger.lock);
+
+	/*
+	 * Every sensor in the sync group sends its own SYNC_INFO blob, so this
+	 * is called once per participant with identical trigger parameters.
+	 * Only (re)initialise the shared state when it is not already tracking
+	 * this configuration: resetting refcount on each blob would rewind the
+	 * count that the earlier participants already contributed, and the
+	 * group would never reach refcount_to_trigger.
+	 */
+	if (!g_fsync_trigger.valid ||
+	    g_fsync_trigger.tpoint != tpoint ||
+	    g_fsync_trigger.refcount_to_trigger != refcount_to_trigger) {
+		g_fsync_trigger.tpoint              = tpoint;
+		g_fsync_trigger.refcount_to_trigger = refcount_to_trigger;
+		g_fsync_trigger.refcount            = 0;
+		g_fsync_trigger.valid               = true;
+	}
+
+	/*
+	 * The first participant owns the GPIO queue for the group; its
+	 * fsync_infinite slot is the one programmed when the trigger fires.
+	 * Later blobs must not steal the role, otherwise the slot that gets
+	 * applied is not the one the earlier participants were counted against.
+	 */
+	if (!g_fsync_trigger.master_sensor)
+		g_fsync_trigger.master_sensor = s_ctrl;
+
+	CAM_DBG(CAM_SENSOR,
+		"fsync trigger stored tpoint=%u refcount_to_trigger=%u master=%s refcount=%u",
+		g_fsync_trigger.tpoint, g_fsync_trigger.refcount_to_trigger,
+		g_fsync_trigger.master_sensor->sensor_name,
+		g_fsync_trigger.refcount);
+
+	mutex_unlock(&g_fsync_trigger.lock);
+}
+
+/**
+ * cam_sensor_fsync_trigger_check_and_apply - Fire GPIO fsync at a trigger point
+ * @s_ctrl:         Sensor reaching @trigger_point
+ * @trigger_point:  Current stage of type enum cci_timer_fsync_trigger_point,
+ *                  i.e. CCI_TIMER_FSYNC_ACQUIRE at CAM_ACQUIRE_DEV or
+ *                  CCI_TIMER_FSYNC_STREAM_ON at CAM_START_DEV
+ *
+ * When @trigger_point matches the stored tpoint, @s_ctrl is counted once
+ * towards the shared refcount; once refcount_to_trigger participants have
+ * arrived, the master's GPIO queue is loaded and started.
+ *
+ * Returns: 0 when the group has not fired yet or fired successfully, negative
+ * error code when arming the GPIO queue failed.
+ */
+static int cam_sensor_fsync_trigger_check_and_apply(
+	struct cam_sensor_ctrl_t *s_ctrl, uint32_t trigger_point)
+{
+	int rc = 0;
+
+	if (!s_ctrl) {
+		CAM_ERR(CAM_SENSOR, "Null s_ctrl data");
+		return -EINVAL;
+	}
+
+	mutex_lock(&g_fsync_trigger.lock);
+
+	if (!g_fsync_trigger.valid) {
+		CAM_DBG(CAM_SENSOR, "Fsync Tpoint is not yet set");
+		goto end;
+	}
+
+	if (g_fsync_trigger.tpoint != trigger_point) {
+		CAM_DBG(CAM_SENSOR,
+			"Requested Tpoint: %d is not matching with Configured Tpoint: %d",
+			trigger_point, g_fsync_trigger.tpoint);
+		goto end;
+	}
+
+	if (!g_fsync_trigger.master_sensor) {
+		CAM_ERR(CAM_SENSOR,
+			"Fsync tpoint %u configured without a master sensor",
+			trigger_point);
+		goto end;
+	}
+
+	/*
+	 * A sensor can reach the same trigger point more than once per cycle:
+	 * the ACQUIRE stage is evaluated both from CAM_ACQUIRE_DEV and from the
+	 * blob handler (the blob can only arrive after the acquire). Count each
+	 * participant once, otherwise the group fires before every sensor has
+	 * arrived, or leaves a stray count behind that skews the next cycle.
+	 */
+	if (s_ctrl->fsync_counted) {
+		CAM_DBG(CAM_SENSOR,
+			"[%s] already counted for tpoint=%u refcount=%u/%u",
+			s_ctrl->sensor_name, trigger_point,
+			g_fsync_trigger.refcount, g_fsync_trigger.refcount_to_trigger);
+		goto end;
+	}
+
+	s_ctrl->fsync_counted = true;
+	g_fsync_trigger.refcount++;
+
+	CAM_DBG(CAM_SENSOR,
+		"[%s] fsync trigger_point=%u refcount=%u/%u",
+		s_ctrl->sensor_name, trigger_point,
+		g_fsync_trigger.refcount, g_fsync_trigger.refcount_to_trigger);
+
+	if (g_fsync_trigger.refcount == g_fsync_trigger.refcount_to_trigger) {
+		rc = cam_sensor_fsync_apply(g_fsync_trigger.master_sensor,
+				CAM_SENSOR_FSYNC_REQ_ID_NONE,
+				MSM_CCI_TIMER_FSYNC_INFINITE);
+		if (rc < 0)
+			CAM_ERR(CAM_SENSOR,
+				"[%s] cam_sensor_fsync_apply failed rc=%d trigger_point=%u",
+				g_fsync_trigger.master_sensor->sensor_name, rc, trigger_point);
+		else
+			CAM_DBG(CAM_SENSOR,
+				"[%s] GPIO fsync triggered at trigger_point=%u refcount=%u",
+				g_fsync_trigger.master_sensor->sensor_name, trigger_point,
+				g_fsync_trigger.refcount_to_trigger);
+	}
+
+end:
+	mutex_unlock(&g_fsync_trigger.lock);
+	return rc;
+}
+
+/**
+ * cam_sensor_fsync_trigger_detach - Remove a sensor from the sync group
+ * @s_ctrl: Sensor leaving the group
+ *
+ * Drops @s_ctrl's contribution to the shared trigger refcount and, if it owns
+ * the group, invalidates the shared state so no stale pointer to it survives.
+ * Also discards the sensor's cached fsync configuration.
+ */
+static void cam_sensor_fsync_trigger_detach(struct cam_sensor_ctrl_t *s_ctrl)
+{
+	mutex_lock(&g_fsync_trigger.lock);
+
+	if (s_ctrl->fsync_counted && g_fsync_trigger.refcount)
+		g_fsync_trigger.refcount--;
+
+	if (g_fsync_trigger.master_sensor == s_ctrl) {
+		g_fsync_trigger.valid               = false;
+		g_fsync_trigger.tpoint              = 0;
+		g_fsync_trigger.refcount_to_trigger = 0;
+		g_fsync_trigger.refcount            = 0;
+		g_fsync_trigger.master_sensor       = NULL;
+	}
+
+	mutex_unlock(&g_fsync_trigger.lock);
+
+	/* Clears fsync_counted along with the cached configuration */
+	cam_sensor_fsync_reset(s_ctrl);
+}
 
 static int cam_sensor_notify_v4l2_error_event(
 	struct cam_sensor_ctrl_t *s_ctrl,
@@ -256,6 +465,36 @@ static int32_t cam_sensor_generic_blob_handler(void *user_data,
 		rc = cam_sensor_handle_res_info(res_info, s_ctrl);
 		break;
 	}
+	case CAM_SENSOR_GENERIC_BLOB_SYNC_INFO: {
+		rc = cam_sensor_fsync_handle_blob(blob_data, blob_size, s_ctrl);
+		if (rc < 0) {
+			CAM_ERR(CAM_SENSOR, "SYNC_INFO: Invalid blob data rc=%d", rc);
+			return rc;
+		}
+
+		/*
+		 * This sensor has now contributed its fsync configuration. It is
+		 * counted towards the ACQUIRE trigger point here rather than in
+		 * CAM_ACQUIRE_DEV, because the blob can only arrive after the
+		 * acquire has already completed.
+		 */
+		if (g_fsync_trigger.valid) {
+			CAM_DBG(CAM_SENSOR, "Requesting for check for first acquire");
+			rc = cam_sensor_fsync_trigger_check_and_apply(s_ctrl,
+				CCI_TIMER_FSYNC_ACQUIRE);
+			if (rc) {
+				CAM_ERR(CAM_SENSOR,
+					"Fsync Trigger check failed for %s rc=%d",
+					s_ctrl->sensor_name, rc);
+				/*
+				 * Arming is retried at the next trigger point;
+				 * do not fail the config ioctl for it.
+				 */
+				rc = 0;
+			}
+		}
+		break;
+	}
 	default:
 		CAM_WARN(CAM_SENSOR, "Invalid blob type %d", blob_type);
 		break;
@@ -426,6 +665,19 @@ static int32_t cam_sensor_pkt_parse(struct cam_sensor_ctrl_t *s_ctrl,
 		i2c_reg_settings =
 			&i2c_data->per_frame[csl_packet->header.request_id %
 				MAX_PER_FRAME_ARRAY];
+
+		/* Reset fsync slot at the start of each update packet so
+		 * that a frame without a SYNC_INFO blob does not carry over
+		 * a stale configuration from a previous request. */
+		if (s_ctrl->per_frame_fsync) {
+			uint32_t idx = csl_packet->header.request_id % MAX_PER_FRAME_ARRAY;
+
+			s_ctrl->per_frame_fsync[idx].is_valid = false;
+			s_ctrl->per_frame_fsync[idx].request_id = 0;
+			s_ctrl->per_frame_fsync[idx].num_queues = 0;
+		}
+
+		s_ctrl->fsync_blob_ready = false;
 		CAM_DBG(CAM_SENSOR, "Received Packet: %lld req: %lld",
 			csl_packet->header.request_id % MAX_PER_FRAME_ARRAY,
 			csl_packet->header.request_id);
@@ -1175,6 +1427,9 @@ void cam_sensor_shutdown(struct cam_sensor_ctrl_t *s_ctrl)
 	s_ctrl->is_probe_succeed = 0;
 	s_ctrl->last_flush_req = 0;
 	s_ctrl->sensor_state = CAM_SENSOR_INIT;
+
+	/* Never leave the shared tracker pointing at a sensor being torn down */
+	cam_sensor_fsync_trigger_detach(s_ctrl);
 }
 
 static int cam_sensor_match_id(struct cam_sensor_ctrl_t *s_ctrl)
@@ -1240,6 +1495,19 @@ static int cam_sensor_stream_off(struct cam_sensor_ctrl_t *s_ctrl)
 	s_ctrl->last_flush_req = 0;
 	s_ctrl->sensor_state = CAM_SENSOR_ACQUIRE;
 	memset(s_ctrl->sensor_res, 0, sizeof(s_ctrl->sensor_res));
+
+	/*
+	 * Release this sensor's contribution to the shared trigger count so a
+	 * subsequent start re-arms the group. The cached fsync configuration
+	 * itself is kept: it survives a stop/start cycle.
+	 */
+	mutex_lock(&g_fsync_trigger.lock);
+	if (s_ctrl->fsync_counted) {
+		s_ctrl->fsync_counted = false;
+		if (g_fsync_trigger.refcount)
+			g_fsync_trigger.refcount--;
+	}
+	mutex_unlock(&g_fsync_trigger.lock);
 
 	CAM_GET_TIMESTAMP(ts);
 	CAM_CONVERT_TIMESTAMP_FORMAT(ts, hrs, min, sec, ms);
@@ -1503,7 +1771,30 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 		s_ctrl->last_updated_req = 0;
 		s_ctrl->last_applied_req = 0;
 		s_ctrl->num_batched_frames = 0;
+		/*
+		 * Any fsync configuration cached before this acquire belongs to a
+		 * previous session; userspace resends the blob after acquiring.
+		 */
+		cam_sensor_fsync_reset(s_ctrl);
 		memset(s_ctrl->sensor_res, 0, sizeof(s_ctrl->sensor_res));
+
+		rc = cam_sensor_fsync_trigger_check_and_apply(s_ctrl,
+				CCI_TIMER_FSYNC_ACQUIRE);
+		if (rc) {
+			/*
+			 * The SYNC_INFO blob travels on CAM_CONFIG_DEV, which
+			 * requires a device handle and therefore can only arrive
+			 * after this ACQUIRE has completed. A sensor acquiring
+			 * before the group is configured is the normal case, so
+			 * a failed arm here must not fail the acquire; the blob
+			 * handler re-runs this check once the config lands.
+			 */
+			CAM_WARN(CAM_SENSOR,
+				"Fsync trigger not armed at acquire for %s rc=%d",
+				s_ctrl->sensor_name, rc);
+			rc = 0;
+		}
+
 		CAM_INFO(CAM_SENSOR,
 			"CAM_ACQUIRE_DEV Success for %s sensor_id:0x%x,sensor_slave_addr:0x%x",
 			s_ctrl->sensor_name,
@@ -1529,6 +1820,15 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 				s_ctrl->bridge_intf.link_hdl);
 			rc = -EAGAIN;
 			goto release_mutex;
+		}
+
+		if (s_ctrl->io_master_info.master_type == CCI_MASTER &&
+		    s_ctrl->io_master_info.cci_client &&
+		    s_ctrl->io_master_info.cci_client->acquired_gpio_queue >= 0) {
+			rc = camera_io_gpio_halt(&(s_ctrl->io_master_info));
+			if (rc < 0)
+				CAM_ERR(CAM_SENSOR, "[%s] GPIO queue halt failed rc=%d",
+					s_ctrl->sensor_name, rc);
 		}
 
 		if (!s_ctrl->aon_pmic_bridge_required) {
@@ -1566,7 +1866,7 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 		s_ctrl->bridge_intf.device_hdl = -1;
 		s_ctrl->bridge_intf.link_hdl = -1;
 		s_ctrl->bridge_intf.session_hdl = -1;
-
+		cam_sensor_fsync_trigger_detach(s_ctrl);
 		s_ctrl->sensor_state = CAM_SENSOR_INIT;
 
 		/* Release AON partial bridge wakelock if still held */
@@ -1591,6 +1891,7 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 		s_ctrl->streamon_count = 0;
 		s_ctrl->streamoff_count = 0;
 		s_ctrl->last_flush_req = 0;
+		s_ctrl->fsync_blob_ready = false;
 	}
 		break;
 	case CAM_QUERY_CAP: {
@@ -1629,6 +1930,15 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 				goto release_mutex;
 			}
 		}
+
+		rc = cam_sensor_fsync_trigger_check_and_apply(s_ctrl,
+				CCI_TIMER_FSYNC_STREAM_ON);
+		if (rc) {
+			CAM_ERR(CAM_SENSOR, "Fsync trigger failed for %s rc=%d",
+				s_ctrl->sensor_name, rc);
+			goto release_mutex;
+		}
+
 		s_ctrl->sensor_state = CAM_SENSOR_START;
 
 		if (s_ctrl->stream_off_after_eof)
@@ -1644,7 +1954,7 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 				CAM_ERR(CAM_SENSOR,
 					"%s Enable CRM SOF freeze timer failed rc: %d",
 					s_ctrl->sensor_name, rc);
-				return rc;
+				goto release_mutex;
 			}
 		}
 
@@ -1658,6 +1968,7 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 			s_ctrl->sensordata->slave_info.sensor_id,
 			s_ctrl->sensordata->slave_info.sensor_slave_addr,
 			s_ctrl->num_batched_frames);
+
 	}
 		break;
 	case CAM_STOP_DEV: {
@@ -2479,6 +2790,18 @@ int cam_sensor_apply_settings(struct cam_sensor_ctrl_t *s_ctrl,
 						CAM_ERR(CAM_SENSOR,
 							"Delete request Fail:%lld rc:%d",
 							del_req_id, rc);
+				}
+			}
+		}
+
+		/* Delete old fsync slots for requests older than del_req_id */
+		if (s_ctrl->per_frame_fsync) {
+			for (i = 0; i < MAX_PER_FRAME_ARRAY; i++) {
+				if (s_ctrl->per_frame_fsync[i].is_valid &&
+				    del_req_id > s_ctrl->per_frame_fsync[i].request_id) {
+					s_ctrl->per_frame_fsync[i].is_valid = false;
+					s_ctrl->per_frame_fsync[i].request_id = 0;
+					s_ctrl->per_frame_fsync[i].num_queues = 0;
 				}
 			}
 		}

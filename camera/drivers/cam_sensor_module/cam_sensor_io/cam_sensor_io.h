@@ -1,11 +1,12 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2024, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #ifndef _CAM_SENSOR_IO_H_
 #define _CAM_SENSOR_IO_H_
+
 
 #include <media/cam_sensor.h>
 #include "cam_sensor_cmn_header.h"
@@ -135,6 +136,28 @@ int32_t camera_io_dev_read_append_write(
  */
 int32_t camera_io_dev_sequential_xfer(struct camera_io_master *io_master_info,
 	struct cam_cmd_i2c_sequential_xfer *seq_xfer);
+
+/**
+ * @io_master_info: I2C/SPI master information
+ * @cmd_type: Gpio queue commands
+ *
+ * This API is to configure GPIO queue */
+int32_t camera_io_gpio_cfg(struct camera_io_master *io_master_info,
+		enum cam_cci_cmd_type cmd_type);
+
+/**
+ * @io_master_info: I2C/SPI master information
+ *
+ * This API is to halt the GPIO queue
+ */
+int32_t camera_io_gpio_halt(struct camera_io_master *io_master_info);
+
+/**
+ * @io_master_info: I2C/SPI master information
+ *
+ * This API is to start the GPIO queue
+ */
+int32_t camera_io_gpio_start(struct camera_io_master *io_master_info);
 
 #include "cam_sensor_i2c.h"
 #include "cam_sensor_spi.h"
