@@ -1,7 +1,6 @@
-camx-dkms (1.0.9-0qli1~) UNRELEASED; urgency=medium
+camx-dkms (1.0.9-0qli1) UNRELEASED; urgency=medium
 
   [ CamX Maintainers ]
-  * WIP — update changelog before next release
 
   [ GitHub Service Bot ]
   * New upstream release
