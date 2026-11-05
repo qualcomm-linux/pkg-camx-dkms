@@ -1,10 +1,6 @@
 camx-dkms (1.0.9-0qli1~) UNRELEASED; urgency=medium
 
-  [ Debusine Action Bot ]
-  * Unreleased changes
-
   [ GitHub Service Bot ]
-  * New upstream release
   * New upstream release
 
  -- GitHub Service Bot <githubservice@qti.qualcomm.com>  Mon, 02 Nov 2026 18:18:31 +0000
