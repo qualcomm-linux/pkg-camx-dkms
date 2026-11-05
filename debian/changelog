@@ -1,3 +1,14 @@
+camx-dkms (1.0.9-0qli1) forky; urgency=medium
+
+  [ GitHub Service Bot ]
+  * New upstream release
+
+  [ Agathe Porte ]
+  * Add myself as uploader
+  * Introduce d/watch file
+
+ -- Debusine Action Bot <noreply@bot.invalid>  Thu, 05 Nov 2026 15:09:01 +0000
+
 camx-dkms (1.0.6-0qli1~bpo13+1) trixie; urgency=medium
 
   [ Lukas Märdian ]
