@@ -3,7 +3,11 @@ camx-dkms (1.0.9-0qli1~) UNRELEASED; urgency=medium
   [ GitHub Service Bot ]
   * New upstream release
 
- -- GitHub Service Bot <githubservice@qti.qualcomm.com>  Mon, 02 Nov 2026 18:18:31 +0000
+  [ Agathe Porte ]
+  * Add myself as uploader
+  * Introduce d/watch file
+
+ -- Agathe Porte <agathe.porte@oss.qualcomm.com>  Thu, 05 Nov 2026 15:05:52 +0000
 
 camx-dkms (1.0.6-0qli1) forky; urgency=medium
 
