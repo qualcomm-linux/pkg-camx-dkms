@@ -7,7 +7,16 @@ set -euo pipefail
 
 KERNEL_VER="${1}"
 BUILD_DIR="$(pwd)"
-KERNEL_BUILD="/lib/modules/${KERNEL_VER}/build"
+# Kernel tree to build against, as resolved by dkms. Defaults to the
+# installed kernel's so the script can still be run directly.
+KERNEL_BUILD="${5:-/lib/modules/${KERNEL_VER}/build}"
+
+if [ ! -d "${KERNEL_BUILD}" ]; then
+    echo "ERROR: no kernel build tree at ${KERNEL_BUILD}" >&2
+    echo "       Either install that kernel's headers or point dkms at a" >&2
+    echo "       tree with --kernelsourcedir." >&2
+    exit 1
+fi
 
 {
     echo "#define CAMERA_COMPILE_TIME \"$(date)\""
