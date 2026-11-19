@@ -10,6 +10,7 @@ BUILD_DIR="$(pwd)"
 # Kernel tree to build against, as resolved by dkms. Defaults to the
 # installed kernel's so the script can still be run directly.
 KERNEL_BUILD="${5:-/lib/modules/${KERNEL_VER}/build}"
+PARALLEL_JOBS="${PARALLEL_JOBS-$(nproc)}"
 
 if [ ! -d "${KERNEL_BUILD}" ]; then
     echo "ERROR: no kernel build tree at ${KERNEL_BUILD}" >&2
@@ -35,7 +36,7 @@ fi
 
 BUILD_FAILED=0
 for arch in ${SUPPORTED_ARCH}; do
-    if make -j`nproc` -C "${KERNEL_BUILD}" \
+    if make "-j${PARALLEL_JOBS}" -C "${KERNEL_BUILD}" \
             M="${BUILD_DIR}" \
             CAMERA_KERNEL_ROOT="${BUILD_DIR}" \
             CAMERA_ARCH="${arch}" \
